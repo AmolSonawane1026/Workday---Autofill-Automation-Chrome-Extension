@@ -1,16 +1,5 @@
 /**
- * Workday Step 1: My Information Automation Module
- * 
- * Handles:
- * - Resume PDF dropzone auto-attachment
- * - Personal contact fields (First Name, Last Name, Email, Phone Number)
- * - Geographic normalization (City, State, Country, Postal Code, Address Line 1)
- * - Country dropdown selection
- * - State / Province region dropdown
- * - Phone Device Type (Mobile/Home/Work)
- * - Country Phone Code (+91, +1, etc.)
- * - "How Did You Hear About Us?" (Source / Job Board)
- * - Secondary heuristic & AI field mappings for step 1
+ * Workday Step 1: Candidate personal information and contact details.
  */
 
 import {

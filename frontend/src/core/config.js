@@ -1,10 +1,5 @@
 /**
- * Application Configuration Module
- * 
- * Centralizes all environment configuration values, preventing hardcoding
- * and ensuring security and maintainability across both browser extension and web builds.
- * 
- * Demonstrates 12-factor application design and defensive fallback handling.
+ * Frontend environment and endpoint configuration.
  */
 
 const getEnv = (key, fallback = '') => {

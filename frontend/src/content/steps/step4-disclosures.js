@@ -1,11 +1,5 @@
 /**
- * Workday Step 4: Voluntary Disclosures & Self-Identification Automation Module
- *
- * Handles:
- * - Equal Employment Opportunity (EEO) voluntary disclosures (Gender, Ethnicity, Veteran Status)
- * - Self-Identification signature and date picker ("Today" button)
- * - Disability status selection
- * - Terms & conditions / voluntary agreement checkbox
+ * Workday Step 4: Voluntary disclosures and self-identification handling.
  */
 
 import {

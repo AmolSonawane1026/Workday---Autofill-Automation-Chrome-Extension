@@ -128,14 +128,14 @@ JSON Output Schema:
     const rawResult = await generateWithGemini(prompt, { ...options, jsonOutput: true });
     return JSON.parse(rawResult);
   } catch (error) {
-    console.warn('AI Parsing failed, running dynamic section parser:', error.message);
+    console.warn('Model parsing failed, using heuristic parser fallback:', error.message);
     const parsed = parseResumeHeuristically(resumeText);
     return parsed;
   }
 }
 
 /**
- * Dynamic Section-Based Parser (Extracts real details & exact URLs from resume)
+ * Heuristic section parser for extracting structured candidate details from resume text.
  */
 export function parseResumeHeuristically(text) {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);

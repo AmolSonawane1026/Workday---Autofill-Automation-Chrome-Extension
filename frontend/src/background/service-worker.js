@@ -4,7 +4,7 @@ import { mapFormFields } from '../core/ai/field-mapper.js';
 import { parseResumeWithAI } from '../core/ai/resume-parser.js';
 import { answerApplicationQuestions } from '../core/ai/question-answerer.js';
 
-console.log('🛡️ Workday AI Background Service Worker initialized.');
+console.log('Workday Background Service Worker initialized.');
 
 // Listen for messages from popup or content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

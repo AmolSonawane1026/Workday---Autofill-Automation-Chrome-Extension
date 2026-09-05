@@ -1,6 +1,5 @@
 /**
- * Production-grade AES-GCM 256-bit encryption utility
- * Uses native Web Crypto API (SubtleCrypto)
+ * AES-GCM encryption utility for client secrets.
  */
 
 const SALT = new Uint8Array([72, 105, 100, 97, 110, 105, 84, 101, 99, 104, 65, 117, 116, 111, 102, 105]); // "HidaniTechAutofi"

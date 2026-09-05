@@ -1,20 +1,7 @@
 import { CONFIG } from '../config.js';
 
 /**
- * Workday AI Field Mapper with Smart Geographic & Entity Knowledge Reasoning
- * 
- * PRODUCTION-GRADE & 100% DYNAMIC:
- * - Powered by Python LangGraph + ChromaDB Vector Store + Google Gemini LLM
- * - NO hardcoded geographic dictionary (no static list of cities/states)
- * - Infers City -> State -> Country -> Workday Phone Code dynamically via AI & Vector DB
- * - Maps all candidate data (Personal Info, Work Experience, Education, Skills)
- * - Separates combined degree/institution strings (e.g. BCA + College name)
- * - Filters out non-input Workday utility and action elements
- */
-
-/**
- * Dynamically queries the Python LangGraph + ChromaDB + Gemini backend
- * to resolve geographic entities (city, state, country, dial code, postal code).
+ * Resolves location string into city, state, country, dial code, and postal code.
  */
 export async function fetchGeographicDetails(locationStr = '', backendUrl = CONFIG.BACKEND_URL) {
   if (!locationStr || !locationStr.trim()) return {};
@@ -34,16 +21,14 @@ export async function fetchGeographicDetails(locationStr = '', backendUrl = CONF
       }
     }
   } catch (err) {
-    console.debug('Async geographic reasoner notice (using dynamic tokenizer):', err.message);
+    console.debug('Geographic location inference fallback:', err.message);
   }
 
-  // Fallback: Dynamic token parsing without any hardcoded dictionary
   return inferGeographicDetails(locationStr);
 }
 
 /**
- * Heuristic token-based parser for locations (e.g. "City, State, Country")
- * Zero hardcoded cities: dynamically splits and extracts structure.
+ * Parses location string (e.g. "City, State, Country") into discrete fields.
  */
 export function inferGeographicDetails(locationStr = '') {
   if (!locationStr) return {};

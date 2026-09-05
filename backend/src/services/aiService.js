@@ -17,7 +17,7 @@ function getGeminiModel(apiKey, modelName = 'gemini-1.5-flash', jsonOutput = tru
 }
 
 /**
- * Executes Python LangChain + LangGraph StateGraph pipeline via FastAPI or child process
+ * Parses resume text using the Python parsing service.
  */
 export async function parseWithPythonLangGraph(resumeText, apiKey) {
   const key = apiKey || config.geminiApiKey || '';

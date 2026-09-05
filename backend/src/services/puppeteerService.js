@@ -1,13 +1,5 @@
 /**
- * Puppeteer-based Workday Automation Pipeline (Coordinator)
- *
- * Decomposed into modular step submodules under ./steps/:
- * - common.js: Browser launch, navigation, authentication, and element helpers
- * - step1-basicInfo.js: Step 1 Contact Information
- * - step2-experience.js: Step 2 Experience, Education, Resume upload, and Websites
- * - step3-questions.js: Step 3 Application Questions & Work Authorization
- * - step4-disclosures.js: Step 4 Voluntary Disclosures & Self-Identification
- * - step5-review.js: Step 5 Review screen & user confirmation check
+ * Puppeteer automation pipeline coordinator.
  */
 
 import {

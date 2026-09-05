@@ -8,8 +8,7 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "py:start": "python python/main.py",
-    "py:dev": "python -m uvicorn python.main:app --reload --host 127.0.0.1 --port 8000",
-    "test": "node --test tests/*.test.js"
+    "py:dev": "python -m uvicorn python.main:app --reload --host 127.0.0.1 --port 8000"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

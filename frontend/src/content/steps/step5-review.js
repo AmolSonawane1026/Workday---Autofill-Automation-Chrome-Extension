@@ -1,11 +1,5 @@
 /**
- * Workday Step 5: Review & Confirmation Module
- *
- * Handles:
- * - Application final review screen validation
- * - Inspecting required fields to verify completeness
- * - Enforcing explicit user confirmation before submission
- *   (Strict compliance with assignment requirement: "submit only after explicit user confirmation")
+ * Workday Step 5: Final review and submission confirmation handling.
  */
 
 import { findSubmitButton, validateRequiredFields } from '../navigator.js';

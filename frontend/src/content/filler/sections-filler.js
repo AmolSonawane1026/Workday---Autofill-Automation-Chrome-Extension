@@ -1,13 +1,5 @@
 /**
- * Workday Complex Sections & Multi-Step Form Automation
- *
- * Manages:
- * - Direct background Resume PDF attachment into Workday dropzones
- * - Dynamic expansion & deduplication of Work Experience & Education panels
- * - Workday standard degree & field of study autocomplete listboxes
- * - Split month/year & single MM/YYYY date widgets
- * - Social & portfolio links (LinkedIn, GitHub, Portfolio)
- * - Self-identification and Voluntary EEO disclosures
+ * Workday multi-section form filler for experience, education, links, and disclosures.
  */
 
 import {

@@ -1,10 +1,5 @@
 /**
- * Workday Step 3: Application Questions Automation Module
- *
- * Handles:
- * - Dynamic questionnaire discovery and label analysis
- * - AI-driven semantic question-answer resolution (Work Auth, Visa Sponsorship, Prior Employment, EEO)
- * - Radio button selection and custom screening prompt completion
+ * Workday Step 3: Application questions and screening form handling.
  */
 
 import { fillFormFields } from '../filler.js';

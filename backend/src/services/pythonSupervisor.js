@@ -27,19 +27,19 @@ function isPythonServerRunning() {
 }
 
 /**
- * Starts and supervises the Python LangGraph + Vector DB backend.
+ * Starts and supervises the Python backend process.
  */
 export async function startPythonBackend() {
   const alreadyRunning = await isPythonServerRunning();
   if (alreadyRunning) {
-    console.log(`🐍 Python LangGraph + Vector DB server is already active on ${config.pythonServerUrl}`);
+    console.log(`Python backend server is active on ${config.pythonServerUrl}`);
     return;
   }
 
   const pythonDir = path.resolve('python');
   const mainPy = path.join(pythonDir, 'main.py');
 
-  console.log(`🐍 Starting Python LangGraph + Vector DB server on ${config.pythonServerUrl}...`);
+  console.log(`Starting Python backend server on ${config.pythonServerUrl}...`);
 
   // Spawn python process
   const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
@@ -77,7 +77,7 @@ export async function startPythonBackend() {
   // Graceful shutdown handlers
   const cleanup = () => {
     if (pythonProcess) {
-      console.log('🛑 Shutting down Python LangGraph server...');
+      console.log('Shutting down Python server...');
       try {
         if (process.platform === 'win32') {
           spawn('taskkill', ['/pid', pythonProcess.pid.toString(), '/f', '/t']);

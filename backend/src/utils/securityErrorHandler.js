@@ -1,11 +1,5 @@
 /**
- * Production-Grade Security Error Handling Utilities
- *
- * Ensures:
- * 1. Sensitive credentials (API keys, passwords, bearer tokens) are NEVER leaked in logs or client error responses.
- * 2. Internal server paths (e.g. C:\Users\... or /var/...) and technical stack traces are sanitized.
- * 3. Client errors (400, 401, 403, 404, 429) return actionable, user-friendly messages.
- * 4. 500 errors in production return safe generic descriptions.
+ * Error handling utilities for sanitizing stack traces and redacting sensitive credentials.
  */
 
 const SENSITIVE_PATTERNS = [

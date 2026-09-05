@@ -1,12 +1,5 @@
 /**
- * Workday Step 2: My Experience Automation Module
- *
- * Handles:
- * - Dynamically expanding and populating Work Experience cards (titles, companies, dates, current roles, descriptions)
- * - Dynamically expanding and populating Education cards (degree standard listbox, field of study prompt, school double-Enter, GPA, years)
- * - Pruning empty extra panels that exceed resume entries
- * - Website / Portfolio / LinkedIn / GitHub links
- * - Dedicated skills search, autocomplete filtering, and verified checkbox selection
+ * Workday Step 2: Experience and education form handling.
  */
 
 import {

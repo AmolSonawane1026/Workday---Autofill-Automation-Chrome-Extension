@@ -1,8 +1,5 @@
 /**
- * Workday AI Autofill Assistant - Content Script Entry Point & Step Router
- *
- * Orchestrates page detection, field scanning, mutation monitoring,
- * and routes execution to dedicated per-step automation handlers.
+ * Content script entry point and step router for Workday applications.
  */
 
 import { isWorkdayPage, detectCurrentStep, detectCompany } from './detector.js';
@@ -28,7 +25,7 @@ let workdayObserver = null;
 const overlayAssistant = {
   updateState: (state) => {
     if (state?.statusMessage) {
-      console.log(`🤖 [Workday Assistant]: ${state.statusMessage}`);
+      console.log(`[Workday Assistant]: ${state.statusMessage}`);
     }
   },
   mount: () => {},
