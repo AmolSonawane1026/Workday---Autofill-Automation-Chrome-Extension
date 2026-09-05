@@ -1,0 +1,39 @@
+{
+  "name": "workday-ai-backend",
+  "version": "1.0.0",
+  "description": "Production AI & Automation Backend API for Workday Autofill Assistant",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "py:start": "python python/main.py",
+    "py:dev": "python -m uvicorn python.main:app --reload --host 127.0.0.1 --port 8000",
+    "test": "node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.3.1",
+    "helmet": "^7.1.0",
+    "mammoth": "^1.8.0",
+    "multer": "^1.4.5-lts.1",
+    "pdf-parse": "^1.1.1",
+    "puppeteer": "^25.10.0"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5",
+    "supertest": "^7.0.0"
+  },
+  "keywords": [
+    "workday",
+    "automation",
+    "openai",
+    "resume-parser",
+    "ai"
+  ],
+  "author": "Candidate",
+  "license": "MIT"
+}

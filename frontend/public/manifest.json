@@ -1,0 +1,57 @@
+{
+  "manifest_version": 3,
+  "name": "Workday AI Autofill Assistant",
+  "version": "1.0.0",
+  "description": "AI-powered job application automation for Workday portals (NVIDIA, Target)",
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "activeTab",
+    "scripting",
+    "tabs"
+  ],
+  "host_permissions": [
+    "*://*.myworkdayjobs.com/*",
+    "*://*.myworkday.com/*",
+    "*://*.workday.com/*",
+    "https://generativelanguage.googleapis.com/*",
+    "http://localhost:5000/*"
+  ],
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "Workday AI Autofill Assistant",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.myworkdayjobs.com/*",
+        "*://*.myworkday.com/*",
+        "*://*.workday.com/*",
+        "http://localhost:*/*",
+        "file://*/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*", "assets/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
