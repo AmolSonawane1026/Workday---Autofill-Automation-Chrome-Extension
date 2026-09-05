@@ -3,7 +3,7 @@ import { encryptSecret, decryptSecret } from '../src/core/security/encryption.js
 
 describe('Web Crypto AES-GCM Encryption Suite', () => {
   it('should encrypt and decrypt a secret string accurately', async () => {
-    const rawApiKey = 'AIzaSyA_sample_google_gemini_key_123456789';
+    const rawApiKey = 'test_sample_secure_secret_token_123456789';
     
     const encrypted = await encryptSecret(rawApiKey);
     expect(encrypted.ciphertext).toBeDefined();
