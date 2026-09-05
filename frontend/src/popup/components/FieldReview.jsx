@@ -49,6 +49,7 @@ export default function FieldReview({ profile, onTriggerAutofill }) {
                       setPageInfo({
                         isWorkday: retryRes.isWorkday,
                         stepName: retryRes.stepInfo?.name || 'Application Step',
+                        stepNum: retryRes.stepInfo?.stepNum || (retryRes.stepInfo?.name?.toLowerCase().includes('experience') ? 2 : 1),
                         company: retryRes.company || 'Workday',
                         isAuthStep: Boolean(retryRes.stepInfo?.isAuthStep)
                       });
@@ -73,6 +74,7 @@ export default function FieldReview({ profile, onTriggerAutofill }) {
             setPageInfo({
               isWorkday: detectRes.isWorkday,
               stepName: detectRes.stepInfo?.name || 'Application Step',
+              stepNum: detectRes.stepInfo?.stepNum || (detectRes.stepInfo?.name?.toLowerCase().includes('experience') ? 2 : 1),
               company: detectRes.company || 'Workday',
               isAuthStep: Boolean(detectRes.stepInfo?.isAuthStep)
             });
@@ -280,6 +282,8 @@ export default function FieldReview({ profile, onTriggerAutofill }) {
     );
   };
 
+  const isStep2 = pageInfo.stepNum === 2 || (pageInfo.stepName && /experience|education/i.test(pageInfo.stepName));
+
   return (
     <div className="space-y-3.5">
       {/* Context Banner */}
@@ -395,6 +399,19 @@ export default function FieldReview({ profile, onTriggerAutofill }) {
             </button>
           </div>
           */}
+
+          {/* Step 2 Specific Instruction Banner */}
+          {isStep2 && (
+            <div className="p-3 rounded-xl bg-blue-50/95 border border-blue-200 text-blue-950 space-y-1.5 shadow-2xs">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-900">
+                <Info className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+                <span>Step 2 Action: Add Experience & Education</span>
+              </div>
+              <p className="text-[11px] text-blue-800 leading-snug">
+                Please click the <strong>Add</strong> button under <strong>Work Experience</strong> and <strong>Education</strong> on the Workday page first to reveal the input cards, then click <strong>Fill Standard Mapped Fields Only</strong> to autofill your details.
+              </p>
+            </div>
+          )}
 
           {/* Highlighted Primary Action Button: Fill Standard Mapped Fields */}
           {mappings.length > 0 && (

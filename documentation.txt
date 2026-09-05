@@ -1,0 +1,217 @@
+WORKDAY JOB APPLICATION AUTOFILL ASSISTANT - DOCUMENTATION
+--------------------------------------------------------------------------------
+
+
+Table of Contents:
+1. Project Overview & Assessment Objectives
+2. Setup & Installation Guide
+3. Live Testing & Workday Application Verification
+4. System Architecture & Technical Design
+5. AI Strategy, Prompting & Field Reasoning
+6. Security, Data Privacy & Reliability Guardrails
+7. Edge Cases, Limitations & Future Enhancements
+
+--------------------------------------------------------------------------------
+1. PROJECT OVERVIEW & ASSESSMENT OBJECTIVES
+--------------------------------------------------------------------------------
+
+
+This project is a Chrome Extension (Manifest V3) paired with a lightweight backend service, built to automate multi-step job application workflows on Workday career portals.
+
+Applying for jobs on Workday involves repetitive steps across multiple pages (Personal Info, Work Experience, Education, Skills, Application Questions, and Voluntary EEO Disclosures). Standard browser autofill tools fail on Workday because of custom dropdown popups, dynamic sub-forms, React synthetic event bindings, and complex multiselect search inputs.
+
+This solution solves these challenges through:
+- Hybrid field mapping combining instant heuristic rules with Google Gemini AI semantic reasoning.
+- Direct DOM interaction that handles Workday's custom listboxes, dynamic card expansion, and native React event triggers.
+- An intuitive Chrome extension popup interface with an integrated resume parser, profile editor, and live step autofill triggers.
+- Practical security practices: client-side AES-GCM encryption for API keys, strict environment variable isolation (.env), and explicit confirmation before final submission.
+
+--------------------------------------------------------------------------------
+
+2. SETUP & INSTALLATION GUIDE
+--------------------------------------------------------------------------------
+
+Prerequisites:
+- Node.js (v18 or higher) and npm
+- Python (v3.10 or higher) and pip
+- Google Chrome browser
+
+A. Backend Setup (Node.js + Python Services)
+--------------------------------------------
+
+1. Open your terminal and navigate to the backend directory:
+   cd backend
+
+2. Install Node.js backend packages:
+   npm install
+
+3. Install Python dependencies (FastAPI, Uvicorn, Selenium, Google GenAI):
+   pip install -r python/requirements.txt
+   (Or run the npm shortcut: npm run pip:install)
+
+4. Configure your environment file:
+   Check the .env file in the backend folder (or copy from .env.example):
+   PORT=5000
+   NODE_ENV=development
+   GEMINI_API_KEY=your_google_gemini_api_key_here
+   DEFAULT_MODEL=gemini-1.5-flash
+   CLIENT_URL=*
+   PYTHON_SERVER_URL=http://127.0.0.1:8000
+
+5. Start the backend server:
+   npm run dev
+
+   * The Node.js Express server starts on http://localhost:5000 and 
+     automatically supervises and launches the Python service on http://127.0.0.1:8000.
+
+B. Frontend Setup (Chrome Extension Build)
+
+------------------------------------------
+
+1. Open a second terminal and navigate to the frontend directory:
+   cd frontend
+
+2. Install frontend dependencies:
+   npm install
+
+3. Verify the frontend environment file (.env):
+   VITE_BACKEND_URL=http://localhost:5000
+   VITE_API_BASE_URL=http://localhost:5000/api
+   VITE_DEFAULT_MODEL=gemini-1.5-flash
+
+4. Build the extension bundle:
+   npm run build
+
+   * This bundles all React components, content scripts, and background 
+     service workers cleanly into the frontend/dist directory.
+
+C. Loading into Google Chrome
+
+-----------------------------
+
+1. Open Google Chrome and enter chrome://extensions in the address bar.
+2. In the top-right corner, switch "Developer mode" to ON.
+3. Click "Load unpacked" in the top-left corner.
+4. Select the frontend/dist folder from this repository.
+5. The "Workday AI Autofill Assistant" icon will appear in your Chrome extensions toolbar.
+
+--------------------------------------------------------------------------------
+
+3. LIVE TESTING & WORKDAY APPLICATION VERIFICATION
+--------------------------------------------------------------------------------
+
+
+This project was built and verified against real-world, live Workday portal applications, including:
+
+- Live Target Workday Application URL:
+  https://target.wd5.myworkdayjobs.com/en-US/targetcareers/job/7000-Target-Pkwy-NNCD-0375-Brooklyn-ParkMN-55445/Lead-Engineer---Cloud-Security--Software-Engineering-_R0000448693-1?q=software%20developer
+
+- Generalizable across enterprise Workday instances (e.g., Target, NVIDIA, and standard *.wd5.myworkdayjobs.com application portals).
+
+Verified Multi-Step Workflow:
+-----------------------------
+- Step 1 (My Information):
+  Populates candidate name, email, phone number, phone device type, country dial code (+91, +1), and dynamic geographic address fields (City, State, Postal Code, Country). Also handles "How Did You Hear About Us" source selection.
+
+- Step 2 (My Experience):
+  Dynamically clicks "Add" to generate cards for all work experience entries in the candidate's profile. Fills company names, titles, location, start/end dates, and job descriptions. Repeats for education history (matching standard degree dropdowns and university inputs). Searches, autocompletes, and checks candidate skills, fills website links (LinkedIn, GitHub, Portfolio), and automatically attaches the resume file to the dropzone.
+
+- Step 3 (Application Questions):
+  Intelligently answers work authorization, citizenship, visa sponsorship, and background screening radio buttons / text fields based on candidate preferences.
+
+- Step 4 (Voluntary Disclosures & EEO):
+  Fills voluntary self-identification fields (Gender, Ethnicity, Veteran Status, Disability status, and electronic signature/date) with candidate consent defaults.
+
+- Step 5 (Review & Safety Confirmation):
+  Displays the final submission page for candidate review. Does NOT auto-submit without explicit human confirmation.
+
+--------------------------------------------------------------------------------
+
+4. SYSTEM ARCHITECTURE & TECHNICAL DESIGN
+
+--------------------------------------------------------------------------------
+
+The system follows a modular architecture split into three core layers:
+
+1. Chrome Extension Client (Frontend):
+   - Manifest V3 compliant: uses non-blocking Service Workers and isolated Content Scripts.
+   - Popup UI (React 18, Tailwind CSS, Lucide icons): provides Resume Upload, Profile Management, Multi-Step Autofill controls, and Settings.
+   - Content Script Runner: Injects DOM listeners and execution handlers into active Workday pages without interfering with page scripts.
+   - DOM MutationObserver: Listens for dynamic sub-form rendering and asynchronous Workday UI updates.
+
+2. Node.js Express Backend:
+   - REST API orchestrator running on port 5000.
+   - Handles multipart resume file parsing (PDF/DOCX), rate limiting, and security error sanitization.
+   - Bridges communication between the frontend extension and AI inference engines.
+
+3. Python Microservice:
+   - Supervised FastAPI service running on port 8000.
+   - Performs geographic entity resolution, skill similarity mapping, and structured state reasoning.
+
+4. Native React Event Dispatching Engine:
+   - Workday forms are built using React with controlled inputs. Simply modifying input.value is ignored by React's internal state tracker.
+   - Our automation engine uses Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set followed by synthetic event sequences (pointerdown, focus, input, change, blur) to ensure reliable state synchronization.
+
+
+--------------------------------------------------------------------------------
+5. AI STRATEGY, PROMPTING & FIELD REASONING
+
+--------------------------------------------------------------------------------
+
+
+1. Two-Tier Hybrid Field Mapping:
+   - Tier 1 (Deterministic Rules): Direct regex pattern matching for standard fields (First Name, Last Name, Email, Phone, LinkedIn URL, Start Date, End Date). Runs in <5ms with high reliability.
+   - Tier 2 (Semantic LLM Reasoning): For screening questions, company-specific prompts, and voluntary disclosure options, queries Google Gemini 1.5 Flash with structured candidate context and strict JSON schema output.
+
+2. Context-Aware Location Reasoning:
+   - Candidates often write locations in formats like "Mumbai, Maharashtra" or "Brooklyn Park, MN".
+   - The location engine infers city, state/region, country, dial code, and postal formatting dynamically, allowing accurate selection in Workday dropdowns without requiring static hardcoded dictionaries.
+
+3. Skills Search & Fuzzy Tag Matching:
+
+   - Workday skills inputs require searching, waiting for autocomplete results, and selecting matching checkboxes.
+   - The engine normalizes candidate skills (e.g. "React.js" -> "reactjs"), triggers the Workday search input, locates the corresponding listbox option, and safely toggles the checkbox without unchecking already-selected skills.
+
+4. Gender & Voluntary Disclosure Analysis:
+   - Analyzes candidate name, honorifics, and profile context to infer gender ('Male' / 'Female') when applicable, while honoring candidate preferences for non-disclosure.
+
+--------------------------------------------------------------------------------
+6. SECURITY, DATA PRIVACY & RELIABILITY GUARDRAILS
+
+--------------------------------------------------------------------------------
+
+1. Client-Side Cryptographic Key Storage:
+   - API keys stored in Chrome local storage are encrypted using AES-GCM 256-bit encryption derived via PBKDF2 with 100,000 hash iterations.
+   - Plaintext keys are never stored in unprotected local storage.
+
+2. Zero Data Retention & Local Execution:
+   - Resume data and candidate profiles remain in the user's local browser storage.
+   - No user resumes or personal credentials are persisted to external third-party databases.
+
+3. Strict Environment Isolation (.env):
+
+   - All backend URLs, ports, and API endpoints are loaded through environment variables (.env), preventing hardcoded endpoints from leaking into source code.
+
+4. Security Error Handler & Credential Redaction:
+   - Backend error handlers automatically sanitize server paths, stack traces, and redact potential API keys or tokens from logs and client responses.
+
+5. Mandatory User Submission Confirmation:
+   - The extension automates data entry and form filling, but intentionally halts before final submission. The candidate retains complete control to review their application before clicking the final submit button.
+
+--------------------------------------------------------------------------------
+
+7. EDGE CASES, LIMITATIONS & FUTURE ENHANCEMENTS
+
+--------------------------------------------------------------------------------
+
+Current Limitations & Edge Cases:
+- Workday Authentication & CAPTCHA: The extension does not bypass Workday login or solve CAPTCHAs. Users must sign in to their Workday account first so the form fields render.
+- Custom Company Assessments: Some job postings include third-party external assessment links (e.g. HackerRank, HireVue) embedded in the application. These external sites require separate manual completion.
+- Variable Workday Listbox Rendering: Certain employers customize dropdown UI classes. The extension includes fallback search and option text scanners to handle these variations.
+
+Future Enhancements:
+
+- Multi-ATS Support: Extending the core DOM engine to support Greenhouse, Lever, and Taleo portals.
+- Local LLM Support: Option to run inference via local models for completely offline resume understanding.
+- Application History Tracker: Local dashboard tracking jobs applied to, company names, dates, and application status.
+
