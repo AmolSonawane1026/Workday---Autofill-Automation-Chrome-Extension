@@ -1,3 +1,5 @@
+import { CONFIG } from '../config.js';
+
 /**
  * Workday AI Field Mapper with Smart Geographic & Entity Knowledge Reasoning
  * 
@@ -14,11 +16,12 @@
  * Dynamically queries the Python LangGraph + ChromaDB + Gemini backend
  * to resolve geographic entities (city, state, country, dial code, postal code).
  */
-export async function fetchGeographicDetails(locationStr = '', backendUrl = 'http://localhost:5000') {
+export async function fetchGeographicDetails(locationStr = '', backendUrl = CONFIG.BACKEND_URL) {
   if (!locationStr || !locationStr.trim()) return {};
 
   try {
-    const res = await fetch(`${backendUrl}/api/ai/infer-location`, {
+    const base = (backendUrl || CONFIG.BACKEND_URL).replace(/\/api\/?$/, '');
+    const res = await fetch(`${base}/api/ai/infer-location`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ location: locationStr.trim() })

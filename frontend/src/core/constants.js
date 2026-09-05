@@ -1,3 +1,5 @@
+import { CONFIG } from './config.js';
+
 export const ACTIONS = {
   DETECT_PAGE: 'DETECT_PAGE',
   PAGE_DETECTED: 'PAGE_DETECTED',
@@ -25,8 +27,8 @@ export const ACTIONS = {
 export const DEFAULT_SETTINGS = {
   geminiApiKey: '',
   hasApiKey: false,
-  model: 'gemini-1.5-flash',
-  backendUrl: 'http://localhost:5000/api',
+  model: CONFIG.DEFAULT_MODEL || 'gemini-1.5-flash',
+  backendUrl: CONFIG.API_BASE_URL || 'http://localhost:5000/api',
   useBackend: false,
   autoAdvanceSteps: false,
   highlightFilledFields: true,

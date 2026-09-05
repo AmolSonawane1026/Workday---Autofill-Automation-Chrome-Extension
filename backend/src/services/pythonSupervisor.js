@@ -1,22 +1,28 @@
 import { spawn } from 'child_process';
 import path from 'path';
 import http from 'http';
+import { config } from '../config/env.js';
 
 let pythonProcess = null;
 
 /**
- * Checks if the Python server is already responding on port 8000.
+ * Checks if the Python server is already responding on configured URL.
  */
 function isPythonServerRunning() {
   return new Promise((resolve) => {
-    const req = http.get('http://127.0.0.1:8000/health', { timeout: 1500 }, (res) => {
-      resolve(res.statusCode === 200);
-    });
-    req.on('error', () => resolve(false));
-    req.on('timeout', () => {
-      req.destroy();
+    try {
+      const healthUrl = new URL('/health', config.pythonServerUrl).toString();
+      const req = http.get(healthUrl, { timeout: 1500 }, (res) => {
+        resolve(res.statusCode === 200);
+      });
+      req.on('error', () => resolve(false));
+      req.on('timeout', () => {
+        req.destroy();
+        resolve(false);
+      });
+    } catch {
       resolve(false);
-    });
+    }
   });
 }
 
@@ -26,14 +32,14 @@ function isPythonServerRunning() {
 export async function startPythonBackend() {
   const alreadyRunning = await isPythonServerRunning();
   if (alreadyRunning) {
-    console.log('🐍 Python LangGraph + Vector DB server is already active on http://localhost:8000');
+    console.log(`🐍 Python LangGraph + Vector DB server is already active on ${config.pythonServerUrl}`);
     return;
   }
 
   const pythonDir = path.resolve('python');
   const mainPy = path.join(pythonDir, 'main.py');
 
-  console.log('🐍 Starting Python LangGraph + Vector DB server on http://localhost:8000...');
+  console.log(`🐍 Starting Python LangGraph + Vector DB server on ${config.pythonServerUrl}...`);
 
   // Spawn python process
   const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';

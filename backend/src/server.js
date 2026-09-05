@@ -9,7 +9,7 @@ const app = express();
 
 app.use(helmet());
 app.use(cors({
-  origin: '*',
+  origin: config.clientUrl || '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-gemini-key', 'x-openai-key']
 }));

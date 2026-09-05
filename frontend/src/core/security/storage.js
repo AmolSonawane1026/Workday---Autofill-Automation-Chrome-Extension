@@ -1,5 +1,6 @@
 import { encryptSecret, decryptSecret } from './encryption.js';
 import { DEFAULT_SETTINGS } from '../constants.js';
+import { CONFIG } from '../config.js';
 
 const STORAGE_KEYS = {
   PROFILE: 'workday_candidate_profile',
@@ -213,7 +214,8 @@ export async function getDecryptedApiKey() {
   if (!encrypted) {
     // Check if backend provides key via health check
     try {
-      const res = await fetch('http://localhost:5000/health');
+      const healthEndpoint = `${CONFIG.BACKEND_URL.replace(/\/api\/?$/, '')}/health`;
+      const res = await fetch(healthEndpoint);
       if (res.ok) {
         const json = await res.json();
         if (json.aiConfigured) return 'BACKEND_MANAGED_KEY';

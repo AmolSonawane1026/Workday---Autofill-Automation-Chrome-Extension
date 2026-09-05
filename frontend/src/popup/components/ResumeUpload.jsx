@@ -5,6 +5,7 @@ import { extractTextFromDocx } from '../../core/parsers/docx-parser.js';
 import { parseResumeWithAI } from '../../core/ai/resume-parser.js';
 import { saveProfile, saveResumeFile, clearProfile, getDecryptedApiKey } from '../../core/security/storage.js';
 import { DEFAULT_SETTINGS } from '../../core/constants.js';
+import { CONFIG } from '../../core/config.js';
 
 export default function ResumeUpload({ profile, onProfileUpdated, onNavigateToProfile }) {
   const [isDragging, setIsDragging] = useState(false);
@@ -105,15 +106,16 @@ export default function ResumeUpload({ profile, onProfileUpdated, onNavigateToPr
 
       let parsedData = null;
       const apiKey = await getDecryptedApiKey();
-      const backendUrl = DEFAULT_SETTINGS.backendUrl || 'http://localhost:5000';
+      const rawBackendUrl = DEFAULT_SETTINGS.backendUrl || CONFIG.BACKEND_URL;
+      const backendBaseUrl = rawBackendUrl.replace(/\/api\/?$/, '');
 
-      // 2. Try Node.js Backend on port 5000
+      // 2. Try Node.js Backend
       try {
         const formData = new FormData();
         formData.append('resume', file);
         if (apiKey) formData.append('apiKey', apiKey);
 
-        const res = await fetch(`${backendUrl}/api/resume/parse-file`, {
+        const res = await fetch(`${backendBaseUrl}/api/resume/parse-file`, {
           method: 'POST',
           body: formData
         });

@@ -1,5 +1,6 @@
 import { mapFieldsWithAI, answerQuestionsWithAI } from '../services/aiService.js';
 import { sendSecureError } from '../utils/securityErrorHandler.js';
+import { config } from '../config/env.js';
 
 export async function mapFormFields(req, res) {
   try {
@@ -56,9 +57,9 @@ export async function inferLocation(req, res) {
       return res.status(400).json({ success: false, error: 'Location query is required' });
     }
 
-    // Connect to Python LangGraph + ChromaDB Vector Store service on port 8000
+    // Connect to Python LangGraph + ChromaDB Vector Store service
     try {
-      const pyRes = await fetch('http://localhost:8000/api/ai/infer-location', {
+      const pyRes = await fetch(`${config.pythonServerUrl}/api/ai/infer-location`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ location, api_key: apiKey })

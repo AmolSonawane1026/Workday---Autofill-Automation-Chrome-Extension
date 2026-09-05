@@ -22,9 +22,9 @@ function getGeminiModel(apiKey, modelName = 'gemini-1.5-flash', jsonOutput = tru
 export async function parseWithPythonLangGraph(resumeText, apiKey) {
   const key = apiKey || config.geminiApiKey || '';
 
-  // 1. First attempt via fast HTTP bridge to running Python server on port 8000
+  // 1. First attempt via fast HTTP bridge to running Python server
   try {
-    const res = await fetch('http://127.0.0.1:8000/api/resume/parse-text', {
+    const res = await fetch(`${config.pythonServerUrl}/api/resume/parse-text`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: resumeText, api_key: key })
