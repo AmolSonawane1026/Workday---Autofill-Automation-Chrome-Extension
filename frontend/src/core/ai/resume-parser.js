@@ -45,6 +45,10 @@ INTELLIGENCE & EXTRACTION DIRECTIVES:
    - "address": Extract street, city, state, postal code, and country.
    - "linkedIn", "github", "portfolio": Extract canonical profile URLs.
 
+6. GENDER & VOLUNTARY DISCLOSURE INTELLIGENCE:
+   - Analyze the candidate's first name, full name, honorifics (Mr., Ms., Mrs.), and any pronoun references in the text to infer their gender ('Male' or 'Female'). If conventionally male (e.g. Amol, Rahul, John, Michael), set "Male". If female (e.g. Priya, Sarah, Emily), set "Female".
+   - Set "ethnicity" (e.g. "Asian", "White", "Black or African American", "Hispanic or Latino", "Two or More Races"), "hispanicOrLatino" ("No" or "Yes"), "veteranStatus" ("I am not a protected veteran"), and "disability" ("No").
+
 Resume Content:
 --------------------
 ${resumeText}
@@ -69,6 +73,13 @@ JSON Output Schema:
     "github": "string",
     "portfolio": "string",
     "websites": ["string"]
+  },
+  "voluntaryDisclosures": {
+    "gender": "Male",
+    "ethnicity": "Asian",
+    "hispanicOrLatino": "No",
+    "veteranStatus": "I am not a protected veteran",
+    "disability": "No"
   },
   "summary": "string",
   "workExperience": [

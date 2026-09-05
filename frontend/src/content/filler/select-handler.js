@@ -91,6 +91,26 @@ export async function handleWorkdayCustomSelect(selectContainer, targetValue) {
         if (match) return match;
       }
 
+      // 6. EEO / Demographic Privacy choice synonym matching (e.g. "I choose not to self-identify" <-> "Prefer Not to Answer" <-> "Decline to specify")
+      const privacyKeywords = ['not to answer', 'not to self-identify', 'not to disclose', 'decline', 'do not wish to answer', 'prefer not', 'choose not'];
+      const isTargetPrivacy = privacyKeywords.some(kw => targetLower.includes(kw));
+      if (isTargetPrivacy) {
+        match = opts.find(opt => {
+          const optText = opt.textContent.trim().toLowerCase();
+          return privacyKeywords.some(kw => optText.includes(kw));
+        });
+        if (match) return match;
+      }
+
+      // 7. Gender specific exact word boundary match
+      if (targetLower === 'male' || targetLower === 'female') {
+        match = opts.find(opt => {
+          const optText = opt.textContent.trim().toLowerCase();
+          return optText === targetLower || new RegExp(`\\b${targetLower}\\b`, 'i').test(optText);
+        });
+        if (match) return match;
+      }
+
       return null;
     };
 

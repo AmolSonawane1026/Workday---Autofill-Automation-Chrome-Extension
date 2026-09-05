@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, AlertTriangle, HelpCircle, Play, RefreshCw, UserPlus, LogIn, Sparkles } from 'lucide-react';
+import { CheckCircle, AlertTriangle, HelpCircle, Play, RefreshCw, UserPlus, LogIn, Sparkles, ShieldAlert, ShieldCheck, Info, Lock } from 'lucide-react';
 import { ACTIONS } from '../../core/constants.js';
 import { mapFormFields } from '../../core/ai/field-mapper.js';
 
@@ -242,7 +242,23 @@ export default function FieldReview({ profile, onTriggerAutofill }) {
 
   const isAuthPage = pageInfo.isAuthStep || pageInfo.stepName.toLowerCase().includes('create account') || pageInfo.stepName.toLowerCase().includes('sign in');
 
-  const getConfidenceBadge = (confidence) => {
+  const isSensitiveField = (label = '', autoId = '') => {
+    const l = (label + ' ' + autoId).toLowerCase();
+    return l.includes('gender') || l.includes('race') || l.includes('ethnicity') ||
+           l.includes('hispanic') || l.includes('veteran') || l.includes('disability') ||
+           l.includes('authorized to work') || l.includes('sponsorship') ||
+           l.includes('agreement') || l.includes('criminal') || l.includes('background') ||
+           l.includes('ssn') || l.includes('security');
+  };
+
+  const getConfidenceBadge = (confidence, isSensitive = false) => {
+    if (isSensitive) {
+      return (
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-300">
+          <ShieldAlert className="w-2.5 h-2.5 text-amber-700" /> Verify
+        </span>
+      );
+    }
     if (confidence >= 0.85) {
       return (
         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -265,7 +281,7 @@ export default function FieldReview({ profile, onTriggerAutofill }) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3.5">
       {/* Context Banner */}
       <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
         <div>
@@ -282,6 +298,16 @@ export default function FieldReview({ profile, onTriggerAutofill }) {
           <span>Re-scan</span>
         </button>
       </div>
+
+      {/* Global Authentication Note (If not logged in) */}
+      {!pageInfo.isWorkday ? (
+        <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200 text-blue-900 text-xs flex items-start gap-2">
+          <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+          <p className="text-[11px] leading-relaxed">
+            <strong>Portal Notice:</strong> Open a Workday job application tab to activate intelligent form detection.
+          </p>
+        </div>
+      ) : null}
 
       {fillSummary && (
         <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center gap-2">
@@ -305,17 +331,17 @@ export default function FieldReview({ profile, onTriggerAutofill }) {
 
       {/* Case 1: User is on Create Account / Sign In Step */}
       {isAuthPage ? (
-        <div className="p-4 rounded-xl bg-blue-50/70 border border-blue-200/80 space-y-3">
+        <div className="p-4 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50/80 border border-blue-200/90 space-y-3">
           <div className="flex items-start gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <UserPlus className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xs">
+              <LogIn className="w-4 h-4" />
             </div>
             <div>
-              <h4 className="text-xs font-semibold text-blue-950">Please Sign In or Create an Account</h4>
+              <h4 className="text-xs font-semibold text-blue-950">Authentication Required</h4>
               <p className="text-[11px] text-blue-900 mt-1 leading-relaxed">
-                Workday requires an account to apply. Please choose a password and sign in on the page to begin.
+                <strong>Note:</strong> If you are not logged in yet, please <strong>sign in</strong> or <strong>create an account</strong> on the Workday page. Multi-step form automation will activate immediately once signed in.
               </p>
-              <div className="mt-2 flex items-center gap-1 text-[11px] text-blue-700 font-medium">
+              <div className="mt-2 flex items-center gap-1.5 text-[11px] text-blue-700 font-medium">
                 <Sparkles className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
                 <span>Autofill will activate immediately once signed in!</span>
               </div>
@@ -326,7 +352,7 @@ export default function FieldReview({ profile, onTriggerAutofill }) {
             <button
               onClick={handleFillEmailOnly}
               disabled={isFilling}
-              className="w-full py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium flex items-center justify-center gap-1.5 shadow-2xs transition"
+              className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition"
             >
               <span>Autofill Email ({profile.personalInfo.email})</span>
             </button>
@@ -335,7 +361,8 @@ export default function FieldReview({ profile, onTriggerAutofill }) {
       ) : (
         /* Case 2: User is on Application Form Steps */
         <div className="space-y-3">
-          {/* Primary Action Card: Step-Aware Autofill */}
+          {/* Smart Step Automation (Commented Out) */}
+          {/*
           <div className="p-3.5 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-sm space-y-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5 text-xs font-semibold">
@@ -367,6 +394,39 @@ export default function FieldReview({ profile, onTriggerAutofill }) {
               )}
             </button>
           </div>
+          */}
+
+          {/* Highlighted Primary Action Button: Fill Standard Mapped Fields */}
+          {mappings.length > 0 && (
+            <button
+              onClick={handleFillAll}
+              disabled={!mappings.length || isFilling || isAutofillingStep}
+              className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:scale-[0.99] text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isFilling ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                  <span>Filling standard fields...</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4 fill-white text-white" />
+                  <span>Fill Standard Mapped Fields Only ({mappings.length})</span>
+                </>
+              )}
+            </button>
+          )}
+
+          {/* Sensitive Information & Manual Verification Evaluation Note */}
+          <div className="p-3 rounded-xl bg-amber-50/90 border border-amber-200/90 text-amber-950 space-y-1 shadow-2xs">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-900">
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+              <span>Verify Sensitive Information & Questions</span>
+            </div>
+            <p className="text-[10.5px] text-amber-800 leading-snug">
+              <strong>Evaluation Note:</strong> High-confidence profile data and voluntary/EEO questions (e.g. Yes/No, Gender, Race) are auto-filled. Please verify sensitive fields before final submission. Any questions that cannot be determined automatically can be adjusted manually.
+            </p>
+          </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs text-slate-500 px-1">
@@ -381,51 +441,50 @@ export default function FieldReview({ profile, onTriggerAutofill }) {
                   <p className="text-xs text-slate-500">Mapping form fields...</p>
                 </div>
               ) : mappings.length > 0 ? (
-                mappings.map((mapping, idx) => (
-                  <div key={mapping.id || idx} className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-slate-800">
-                        {mapping.label} {mapping.required && <span className="text-red-500">*</span>}
-                      </span>
-                      {getConfidenceBadge(mapping.confidence)}
-                    </div>
+                mappings.map((mapping, idx) => {
+                  const isSensitive = isSensitiveField(mapping.label, mapping.automationId);
+                  return (
+                    <div
+                      key={mapping.id || idx}
+                      className={`p-2.5 rounded-lg space-y-1.5 border transition ${
+                        isSensitive
+                          ? 'bg-amber-50/40 border-amber-200 border-l-4 border-l-amber-500'
+                          : 'bg-slate-50 border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-slate-800">
+                          {mapping.label} {mapping.required && <span className="text-red-500">*</span>}
+                        </span>
+                        {getConfidenceBadge(mapping.confidence, isSensitive)}
+                      </div>
 
-                    <input
-                      type="text"
-                      value={mapping.value !== undefined ? mapping.value : ''}
-                      onChange={(e) => updateMappingValue(mapping.id, e.target.value)}
-                      placeholder="Empty value"
-                      className="w-full px-2.5 py-1 rounded bg-white border border-slate-300 text-xs text-slate-900 focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-                ))
+                      <input
+                        type="text"
+                        value={mapping.value !== undefined ? mapping.value : ''}
+                        onChange={(e) => updateMappingValue(mapping.id, e.target.value)}
+                        placeholder="Empty value"
+                        className="w-full px-2.5 py-1 rounded bg-white border border-slate-300 text-xs text-slate-900 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                  );
+                })
               ) : (
                 <div className="p-6 text-center rounded-xl bg-slate-50 border border-slate-200">
                   <p className="text-xs text-slate-600 font-medium">
-                    {!isOnWorkdayTab ? 'Open a Workday job application tab and click Re-scan.' : (profile ? 'Please sign in or navigate to an application step (e.g. My Information).' : 'Upload your resume in the Resume tab first.')}
+                    {!isOnWorkdayTab ? (
+                      'Open a Workday job application tab and click Re-scan.'
+                    ) : !profile ? (
+                      'Upload your resume in the Resume tab first.'
+                    ) : pageInfo.isAuthStep ? (
+                      'Please sign in or create an account to begin the application.'
+                    ) : (
+                      `No standard mapped fields detected on this step (${pageInfo.stepName || 'Current Step'}). Click Re-scan if fields just loaded.`
+                    )}
                   </p>
                 </div>
               )}
             </div>
-
-            {mappings.length > 0 && (
-              <button
-                onClick={handleFillAll}
-                disabled={!mappings.length || isFilling || isAutofillingStep}
-                className="w-full py-2 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-700 font-medium text-xs flex items-center justify-center gap-2 border border-slate-200 transition"
-              >
-                {isFilling ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Filling fields...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Fill Standard Mapped Fields Only ({mappings.length})</span>
-                  </>
-                )}
-              </button>
-            )}
           </div>
         </div>
       )}

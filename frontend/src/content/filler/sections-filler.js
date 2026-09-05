@@ -18,6 +18,8 @@ import {
   dispatchChangeEvents
 } from './dom-utils.js';
 
+import { handleWorkdayCustomSelect } from './select-handler.js';
+
 let _resumeUploadInProgress = false;
 let _resumeUploadTimeout = null;
 
@@ -1303,62 +1305,186 @@ export async function fillWebsiteLinks(profile = {}) {
 }
 
 /**
- * Fill Self-Identification page fields (Name, Date, Disability)
+ * Fill complete Voluntary Disclosures (Gender, Hispanic/Latino, Ethnicity, Veteran)
+ * and Self-Identification page fields (Name, Date, Disability, Agreement checkbox)
  */
-export async function fillSelfIdentification(profile = {}) {
+export async function fillVoluntaryDisclosuresAndSelfId(profile = {}) {
   const personal = profile?.personal || profile?.personalInfo || {};
+  const disclosures = profile?.voluntaryDisclosures || profile?.demographics || profile?.eeo || profile?.eeoDefaults || {};
   const firstName = personal.first_name || personal.firstName || '';
   const lastName = personal.last_name || personal.lastName || '';
   const fullName = personal.full_name || personal.fullName || `${firstName} ${lastName}`.trim();
 
-  // Full Name
-  const nameInput = document.querySelector('input[data-automation-id="name"]');
-  if (nameInput && fullName) {
-    setNativeInputValue(nameInput, fullName);
+  // 1. Gender Dropdown
+  const genderTarget = disclosures.gender || profile?.gender || 'Prefer Not to Answer';
+  const genderTrigger = document.querySelector(
+    'button[data-automation-id="gender"], ' +
+    'div[data-automation-id*="formField-gender"] button, ' +
+    'div[data-automation-id*="formField-gender"] [role="combobox"], ' +
+    'button[aria-label*="Gender" i]'
+  ) || Array.from(document.querySelectorAll('label')).find(l => l.textContent.trim().toLowerCase().startsWith('gender'))?.parentElement?.querySelector('button, [role="combobox"]');
+
+  if (genderTrigger) {
+    console.log(`📋 Selecting Gender: "${genderTarget}"`);
+    await handleWorkdayCustomSelect(genderTrigger, genderTarget);
+    await new Promise(r => setTimeout(r, 250));
   }
 
-  // Today Date picker
+  // 2. Hispanic or Latino Dropdown
+  const hispanicTarget = disclosures.hispanicOrLatino || disclosures.hispanic || profile?.hispanicOrLatino || 'No';
+  const hispanicTrigger = document.querySelector(
+    'button[data-automation-id="hispanicOrLatino"], ' +
+    'button[data-automation-id="hispanic"], ' +
+    'div[data-automation-id*="formField-hispanic"] button, ' +
+    'div[data-automation-id*="formField-hispanic"] [role="combobox"]'
+  ) || Array.from(document.querySelectorAll('label')).find(l => l.textContent.trim().toLowerCase().includes('hispanic'))?.parentElement?.querySelector('button, [role="combobox"]');
+
+  if (hispanicTrigger) {
+    console.log(`📋 Selecting Hispanic/Latino: "${hispanicTarget}"`);
+    await handleWorkdayCustomSelect(hispanicTrigger, hispanicTarget);
+    await new Promise(r => setTimeout(r, 250));
+  }
+
+  // 3. Ethnicity / Race Dropdown
+  const ethnicityTarget = disclosures.ethnicity || disclosures.race || profile?.ethnicity || profile?.race || 'Prefer Not to Answer';
+  const ethnicityTrigger = document.querySelector(
+    'button[data-automation-id="ethnicity"], ' +
+    'button[data-automation-id="ethnicityDropdown"], ' +
+    'div[data-automation-id*="formField-ethnicity"] button, ' +
+    'div[data-automation-id*="formField-race"] button'
+  ) || Array.from(document.querySelectorAll('label')).find(l => {
+    const t = l.textContent.trim().toLowerCase();
+    return t.includes('ethnicity') || t.includes('race');
+  })?.parentElement?.querySelector('button, [role="combobox"]');
+
+  if (ethnicityTrigger) {
+    console.log(`📋 Selecting Ethnicity: "${ethnicityTarget}"`);
+    await handleWorkdayCustomSelect(ethnicityTrigger, ethnicityTarget);
+    await new Promise(r => setTimeout(r, 250));
+  }
+
+  // 4. Veteran Status Dropdown
+  const veteranTarget = disclosures.veteranStatus || disclosures.veteran || profile?.veteranStatus || 'I am not a protected veteran';
+  const veteranTrigger = document.querySelector(
+    'button[data-automation-id="veteranStatus"], ' +
+    'button[data-automation-id="veteran"], ' +
+    'div[data-automation-id*="formField-veteran"] button, ' +
+    'div[data-automation-id*="formField-veteran"] [role="combobox"]'
+  ) || Array.from(document.querySelectorAll('label')).find(l => l.textContent.trim().toLowerCase().includes('veteran'))?.parentElement?.querySelector('button, [role="combobox"]');
+
+  if (veteranTrigger) {
+    console.log(`📋 Selecting Veteran Status: "${veteranTarget}"`);
+    await handleWorkdayCustomSelect(veteranTrigger, veteranTarget);
+    await new Promise(r => setTimeout(r, 250));
+  }
+
+  // 5. Voluntary Agreement Checkbox
+  const agreementCb = document.querySelector(
+    'input[data-automation-id="agreementCheckbox"], ' +
+    'input[data-automation-id*="agreement" i], ' +
+    'input[type="checkbox"][aria-label*="agree" i], ' +
+    'input[type="checkbox"][aria-label*="consent" i], ' +
+    'input[type="checkbox"][aria-label*="acknowledge" i]'
+  );
+  if (agreementCb && !agreementCb.checked) {
+    agreementCb.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+    agreementCb.click();
+    dispatchChangeEvents(agreementCb);
+    await new Promise(r => setTimeout(r, 150));
+  }
+
+  // 6. Full Name / Signature Input
+  const nameInput = document.querySelector(
+    'input[data-automation-id="name"], ' +
+    'input[data-automation-id="legalName"], ' +
+    'input[aria-label*="Your Name" i], ' +
+    'input[aria-label*="Full Name" i], ' +
+    'input[aria-label*="Signature" i], ' +
+    'div[data-automation-id*="formField-name"] input'
+  );
+  if (nameInput && fullName) {
+    nameInput.focus();
+    setNativeInputValue(nameInput, fullName);
+    nameInput.dispatchEvent(new InputEvent('input', { bubbles: true, cancelable: true, data: fullName, inputType: 'insertText' }));
+    nameInput.dispatchEvent(new Event('change', { bubbles: true }));
+    console.log(`  ✅ Disclosures Signature Name: "${fullName}"`);
+  }
+
+  // 7. Date Picker (Today's Date)
   const dateIcon = document.querySelector('div[data-automation-id="dateIcon"]');
   if (dateIcon) {
     dateIcon.click();
-    await new Promise(r => setTimeout(r, 300));
+    await new Promise(r => setTimeout(r, 250));
     const todayBtn = document.querySelector('button[data-automation-id="datePickerSelectedToday"]');
-    if (todayBtn) todayBtn.click();
-    await new Promise(r => setTimeout(r, 200));
+    if (todayBtn) {
+      todayBtn.click();
+      await new Promise(r => setTimeout(r, 200));
+    }
   }
 
-  // Disability Status
-  const disabilityRadios = {
-    yes: document.querySelector('input[id="64cbff5f364f10000ae7a421cf210000"]'),
-    no: document.querySelector('input[id="64cbff5f364f10000aeec521b4ec0000"]'),
-    abstain: document.querySelector('input[id="64cbff5f364f10000af3af293a050000"]')
-  };
-
-  const disabilityChoice = disabilityRadios.abstain || disabilityRadios.no;
-  if (disabilityChoice && !disabilityChoice.checked) {
-    disabilityChoice.click();
+  const dateInput = document.querySelector(
+    'input[data-automation-id="date"], ' +
+    'div[data-automation-id*="formField-date"] input, ' +
+    'input[aria-label*="Date" i]'
+  );
+  if (dateInput && !dateInput.value) {
+    const today = new Date();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    const formattedDate = `${mm}/${dd}/${yyyy}`;
+    setNativeInputValue(dateInput, formattedDate);
+    dateInput.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
-  if (!disabilityRadios.yes && !disabilityRadios.no && !disabilityRadios.abstain) {
-    const radios = document.querySelectorAll('input[type="radio"]');
-    for (const radio of radios) {
+  // 8. Disability Status (Semantic Radio Discovery)
+  const disabilityPref = (disclosures.disabilityStatus || disclosures.disability || profile?.disability || 'no').toLowerCase();
+  const allRadios = Array.from(document.querySelectorAll('input[type="radio"]'));
+
+  if (allRadios.length > 0) {
+    let targetRadio = null;
+
+    for (const radio of allRadios) {
       const label = radio.labels?.[0] || radio.closest('label') || radio.parentElement;
       const text = (label?.textContent || '').toLowerCase();
-      if (text.includes('do not wish') || text.includes('prefer not') || text.includes('decline')) {
-        if (!radio.checked) radio.click();
-        break;
+
+      if (disabilityPref === 'yes' || disabilityPref.includes('have a disability')) {
+        if (text.includes('yes, i have a disability') || (text.includes('have a disability') && !text.includes('do not'))) {
+          targetRadio = radio;
+          break;
+        }
+      } else if (disabilityPref === 'abstain' || disabilityPref.includes('wish') || disabilityPref.includes('prefer not') || disabilityPref.includes('decline')) {
+        if (text.includes('do not wish to answer') || text.includes('prefer not') || text.includes('decline') || text.includes('choose not')) {
+          targetRadio = radio;
+          break;
+        }
+      } else {
+        // default to "No, I do not have a disability" or "No"
+        if (text.includes('do not have a disability') || text.includes('no, i') || text.startsWith('no')) {
+          targetRadio = radio;
+          break;
+        }
       }
+    }
+
+    // Fallback: If not matched, select the "do not wish / abstain" or "No" radio
+    if (!targetRadio) {
+      targetRadio = allRadios.find(r => {
+        const text = (r.labels?.[0]?.textContent || r.closest('label')?.textContent || r.parentElement?.textContent || '').toLowerCase();
+        return text.includes('do not wish') || text.includes('prefer not') || text.includes('do not have');
+      }) || allRadios[0];
+    }
+
+    if (targetRadio && !targetRadio.checked) {
+      targetRadio.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+      targetRadio.click();
+      targetRadio.dispatchEvent(new Event('change', { bubbles: true }));
+      console.log('  ✅ Selected Disability Status radio');
+      await new Promise(r => setTimeout(r, 150));
     }
   }
 }
 
-/**
- * Fill Voluntary Disclosures agreement checkbox
- */
-export async function fillVoluntaryAgreement() {
-  const checkbox = document.querySelector('input[data-automation-id="agreementCheckbox"]');
-  if (checkbox && !checkbox.checked) {
-    checkbox.click();
-    dispatchChangeEvents(checkbox);
-  }
-}
+export const fillSelfIdentification = fillVoluntaryDisclosuresAndSelfId;
+export const fillVoluntaryAgreement = fillVoluntaryDisclosuresAndSelfId;
+

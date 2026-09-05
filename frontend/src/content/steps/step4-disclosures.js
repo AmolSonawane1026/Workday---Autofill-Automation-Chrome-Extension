@@ -9,8 +9,7 @@
  */
 
 import {
-  fillVoluntaryAgreement,
-  fillSelfIdentification
+  fillVoluntaryDisclosuresAndSelfId
 } from '../filler/sections-filler.js';
 
 import { fillFormFields } from '../filler.js';
@@ -22,7 +21,14 @@ import { ACTIONS } from '../../core/constants.js';
 export async function handleStep4(profile, currentFields, sendToBackground, overlayAssistant) {
   overlayAssistant?.updateState({ statusMessage: 'Step 4: Processing voluntary disclosures & EEO...' });
 
-  // 1. Map demographic disclosure questions via background mapper
+  // 1. Direct specialized handler for Workday EEO custom dropdowns, disability radios, and self-id
+  try {
+    await fillVoluntaryDisclosuresAndSelfId(profile);
+  } catch (directErr) {
+    console.debug('Direct Step 4 disclosures notice:', directErr.message);
+  }
+
+  // 2. Map any dynamic questionnaire fields via AI / background mapper
   try {
     const response = await sendToBackground({
       action: ACTIONS.MAP_FIELDS,
@@ -57,11 +63,12 @@ export async function handleStep4(profile, currentFields, sendToBackground, over
     console.debug('Step 4 AI disclosures notice:', err.message);
   }
 
-  // 2. Click voluntary agreement checkbox
-  await fillVoluntaryAgreement();
-
-  // 3. Complete Self-Identification (name, today's date, disability status)
-  await fillSelfIdentification(profile);
+  // 3. Second pass on self-id in case elements were revealed
+  try {
+    await fillVoluntaryDisclosuresAndSelfId(profile);
+  } catch (pass2Err) {
+    console.debug('Step 4 second pass notice:', pass2Err.message);
+  }
 
   const message = 'Step 4: Disclosures and self-identification filled successfully.';
   overlayAssistant?.updateState({
@@ -76,3 +83,4 @@ export async function handleStep4(profile, currentFields, sendToBackground, over
     message
   };
 }
+

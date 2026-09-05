@@ -97,6 +97,7 @@ export function extractFormFields(container = document) {
     if (input.type === 'password' || input.type === 'hidden') return;
     if (processedElements.has(input)) return;
     if (input.closest('div[data-uxi-widget-type="multiselect"], div[data-automation-id="multiSelectContainer"]')) return;
+    if (input.parentElement && input.parentElement.querySelector('button[aria-haspopup], button[role="combobox"], [data-automation-id*="select"]')) return;
     processedElements.add(input);
 
     const label = findLabelForElement(input);
@@ -117,9 +118,9 @@ export function extractFormFields(container = document) {
     });
   });
 
-  // 4. Custom Workday Selects / Buttons / Dropdowns (e.g. Country, Phone Device Type, Degree)
+  // 4. Custom Workday Selects / Buttons / Dropdowns (e.g. Gender, Race, Country, Phone Device Type, Degree)
   const customSelects = container.querySelectorAll(
-    'div[data-automation-id*="select"], button[aria-haspopup="listbox"], button[data-automation-id*="prompt"], div[role="combobox"], [data-automation-id*="select-container"], select, [data-automation-id*="formField-"] button'
+    'div[data-automation-id*="select"], div[data-automation-id*="dropdown"], button[aria-haspopup="listbox"], button[aria-haspopup="true"], button[aria-haspopup], button[role="combobox"], div[role="combobox"], div[role="button"][aria-haspopup], [data-automation-id*="select-container"], select, [data-automation-id*="formField-"] button, [data-automation-id*="question"] button, [data-automation-id*="formField"] button, button[data-automation-id*="prompt"], button[data-automation-id*="select"], button[data-automation-id*="dropdown"], div[data-uxi-widget-type="select"], [role="group"] button, fieldset button'
   );
 
   customSelects.forEach(selectElem => {
@@ -131,8 +132,15 @@ export function extractFormFields(container = document) {
     const ariaLbl = (selectElem.getAttribute('aria-label') || '').toLowerCase();
     const btnText = selectElem.textContent.toLowerCase().trim();
 
-    // Skip utility and action buttons (kebab menus, delete, remove, file uploads)
-    if (autoIdRaw === 'utilitymenubutton' || autoIdRaw.includes('utilitymenu') || autoIdRaw.includes('delete') || ariaLbl.includes('delete') || ariaLbl.includes('remove') || btnText.includes('upload a file') || btnText.startsWith('delete ')) {
+    // Skip navigation and utility action buttons (Save and Continue, Back, Next, Submit, Kebab menu, Delete, Upload)
+    if (
+      autoIdRaw === 'utilitymenubutton' || autoIdRaw.includes('utilitymenu') ||
+      autoIdRaw.includes('delete') || ariaLbl.includes('delete') || ariaLbl.includes('remove') ||
+      btnText === 'save and continue' || btnText === 'save & continue' || btnText === 'back' ||
+      btnText === 'next' || btnText === 'submit' || btnText === 'cancel' || btnText === 'sign in' ||
+      btnText === 'apply' || btnText.startsWith('delete') || btnText.startsWith('remove') ||
+      btnText.includes('upload a file') || btnText === 'add' || btnText.startsWith('add ')
+    ) {
       return;
     }
     if (selectElem.closest('[data-automation-id*="file-upload"], [data-automation-id*="fileUpload"], [data-automation-id*="attachments"]')) {
@@ -142,9 +150,9 @@ export function extractFormFields(container = document) {
     processedElements.add(selectElem);
 
     const label = findLabelForElement(selectElem);
-    const parentField = selectElem.closest('[data-automation-id*="formField-"]');
+    const parentField = selectElem.closest('[data-automation-id*="formField-"], [data-automation-id*="formField"], [data-automation-id*="question"], [role="group"]');
     const automationId = parentField?.getAttribute('data-automation-id') || selectElem.getAttribute('data-automation-id') || selectElem.id || selectElem.getAttribute('name') || '';
-    const isRequired = selectElem.getAttribute('aria-required') === 'true' || label.includes('*');
+    const isRequired = selectElem.getAttribute('aria-required') === 'true' || selectElem.getAttribute('required') !== null || label.includes('*');
 
     let options = [];
     let currentValue = '';
@@ -282,43 +290,65 @@ function findLabelForElement(element) {
     }
   }
 
-  // 2. aria-label or aria-labelledby (skip generic icon labels like "prompt" or "remove")
-  const ariaLabel = element.getAttribute('aria-label');
-  if (ariaLabel && !['prompt', 'delete', 'remove', 'clear', 'search'].includes(ariaLabel.toLowerCase().trim())) {
-    return ariaLabel.trim();
-  }
+  // 2. aria-labelledby
   if (element.getAttribute('aria-labelledby')) {
     const ids = element.getAttribute('aria-labelledby').split(/\s+/);
     const texts = ids.map(id => document.getElementById(id)?.textContent?.trim()).filter(Boolean);
     if (texts.length > 0) return texts.join(' ');
   }
 
-  // 3. Workday specific formField wrappers (DO NOT stop at generic immediate div)
-  const parentContainer = element.closest('[data-automation-id*="formField"], [data-automation-id*="formLabel"], [data-automation-id*="field"], .form-group, fieldset, [data-automation-id*="form-group"]');
+  // 3. aria-label (skip generic placeholders / utility words)
+  const ariaLabel = element.getAttribute('aria-label');
+  if (ariaLabel && !['prompt', 'delete', 'remove', 'clear', 'search', 'select one', 'select', 'choose one', 'options'].includes(ariaLabel.toLowerCase().trim())) {
+    return ariaLabel.trim();
+  }
+
+  // 4. Preceding sibling in DOM (e.g. <label>, <h4>, <h3>, <p>)
+  let prev = element.previousElementSibling;
+  while (prev) {
+    const tag = prev.tagName.toLowerCase();
+    if (['label', 'h3', 'h4', 'h5', 'legend', 'p', 'span', 'div'].includes(tag)) {
+      const txt = prev.textContent.trim();
+      if (txt && txt.length < 150 && !txt.toLowerCase().includes('select one')) {
+        return txt;
+      }
+    }
+    prev = prev.previousElementSibling;
+  }
+
+  // 5. Parent's preceding sibling (Workday 2-column flex/grid row pattern)
+  let parent = element.parentElement;
+  if (parent) {
+    let pPrev = parent.previousElementSibling;
+    while (pPrev) {
+      const tag = pPrev.tagName.toLowerCase();
+      if (['label', 'h3', 'h4', 'h5', 'legend', 'p', 'span', 'div'].includes(tag)) {
+        const txt = pPrev.textContent.trim();
+        if (txt && txt.length < 150 && !txt.toLowerCase().includes('select one')) {
+          return txt;
+        }
+      }
+      pPrev = pPrev.previousElementSibling;
+    }
+  }
+
+  // 6. Closest Workday formField / group wrapper
+  const parentContainer = element.closest('[data-automation-id*="formField"], [data-automation-id*="formLabel"], [data-automation-id*="field"], [data-automation-id*="question"], .form-group, fieldset, [data-fkit-id], [role="group"]');
   if (parentContainer) {
-    const wdLabel = parentContainer.querySelector('[data-automation-id*="formLabel"], label, legend, [data-automation-id*="promptLabel"]');
+    const wdLabel = parentContainer.querySelector('[data-automation-id*="formLabel"], [data-automation-id*="promptLabel"], label, legend');
     if (wdLabel && wdLabel.textContent.trim()) {
       return wdLabel.textContent.trim();
     }
   }
 
-  // 4. Walk up parent hierarchy (up to 5 levels) to find nearest label or formLabel
+  // 7. Scoped walk up parent hierarchy (up to 4 levels) looking for immediate label/heading
   let curr = element.parentElement;
-  for (let i = 0; i < 5 && curr; i++) {
-    const foundLabel = curr.querySelector('label, [data-automation-id*="formLabel"], legend');
-    if (foundLabel && foundLabel.textContent.trim()) {
-      return foundLabel.textContent.trim();
+  for (let i = 0; i < 4 && curr; i++) {
+    const directLabel = curr.querySelector(':scope > label, :scope > legend, :scope > h3, :scope > h4, :scope > [data-automation-id*="formLabel"]');
+    if (directLabel && directLabel.textContent.trim()) {
+      return directLabel.textContent.trim();
     }
     curr = curr.parentElement;
-  }
-
-  // 5. Preceding sibling
-  let prev = element.previousElementSibling;
-  while (prev) {
-    if (prev.tagName.toLowerCase() === 'label' || (prev.textContent && prev.textContent.length < 80)) {
-      if (prev.textContent.trim()) return prev.textContent.trim();
-    }
-    prev = prev.previousElementSibling;
   }
 
   return element.getAttribute('placeholder') || element.getAttribute('data-automation-id') || element.name || 'Application Field';

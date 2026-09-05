@@ -247,4 +247,93 @@ describe('Workday DOM Extraction & Mapping against Live Workday HTML', () => {
     const extMap = mapped.find(m => m.label.includes('Extension') || m.automationId.includes('extension'));
     expect(extMap.value).toBe('');
   });
+
+  it('correctly extracts and maps fields from live Step 4 Voluntary Disclosures Workday DOM', () => {
+    const step4Html = `
+      <div data-automation-id="applyFlowVoluntaryDisclosuresPage">
+        <div role="group" aria-labelledby="Personal-Information-section">
+          <h4 color="#494949" id="Personal-Information-section" class="css-1bituzg">Personal Information</h4>
+          <div data-fkit-id="personalInfoUS--null" class="css-1obf64m">
+            <div data-automation-id="formField-gender" data-fkit-id="personalInfoUS--gender" class="css-7t35fz">
+              <label for="personalInfoUS--gender" class="css-1ud5i8o"><span>Please select your gender<abbr aria-hidden="true" class="css-1fc83zd">*</abbr></span></label>
+              <div class="css-15rz5ap">
+                <div class="css-12zup1l">
+                  <button aria-haspopup="listbox" type="button" value="" aria-label="Please select your gender Select One Required" name="gender" id="personalInfoUS--gender" class="css-ikij74">Select One</button>
+                  <input type="text" class="css-77hcv" value="">
+                </div>
+              </div>
+            </div>
+            <div data-automation-id="formField-ethnicity" data-fkit-id="personalInfoUS--ethnicity" class="css-7t35fz">
+              <label for="personalInfoUS--ethnicity" class="css-1ud5i8o"><span>Race: Select the option that applies<abbr aria-hidden="true" class="css-1fc83zd">*</abbr></span></label>
+              <div class="css-15rz5ap">
+                <div class="css-12zup1l">
+                  <button aria-haspopup="listbox" type="button" value="" aria-label="Race: Select the option that applies Select One Required" name="ethnicity" id="personalInfoUS--ethnicity" class="css-ikij74">Select One</button>
+                  <input type="text" class="css-77hcv" value="">
+                </div>
+              </div>
+            </div>
+            <div data-automation-id="formField-hispanicOrLatino" data-fkit-id="personalInfoUS--hispanicOrLatino" class="css-7t35fz">
+              <label for="personalInfoUS--hispanicOrLatino" class="css-1ud5i8o">Hispanic or Latino?</label>
+              <div class="css-15rz5ap">
+                <div class="css-12zup1l">
+                  <button aria-haspopup="listbox" type="button" value="" name="hispanicOrLatino" id="personalInfoUS--hispanicOrLatino" class="css-ikij74">Select One</button>
+                  <input type="text" class="css-77hcv" value="">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div role="group" aria-labelledby="Terms-and-Conditions-section">
+          <div data-automation-id="formField-acceptTermsAndAgreements" data-fkit-id="termsAndConditions--acceptTermsAndAgreements" class="css-7t35fz">
+            <label for="termsAndConditions--acceptTermsAndAgreements" class="css-1ud5i8o"><span>Yes, I have read and consent to the terms and conditions.<abbr aria-hidden="true" class="css-1fc83zd">*</abbr></span></label>
+            <input id="termsAndConditions--acceptTermsAndAgreements" type="checkbox" aria-checked="false" name="acceptTermsAndAgreements" aria-required="true" class="css-c051dz">
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.innerHTML = step4Html;
+    const fields = extractFormFields();
+
+    expect(fields.length).toBeGreaterThanOrEqual(4);
+
+    const genderField = fields.find(f => f.domId === 'personalInfoUS--gender' || f.name === 'gender');
+    expect(genderField).toBeDefined();
+    expect(genderField.label).toBe('Please select your gender');
+    expect(genderField.type).toBe('select');
+
+    const ethnicityField = fields.find(f => f.domId === 'personalInfoUS--ethnicity' || f.name === 'ethnicity');
+    expect(ethnicityField).toBeDefined();
+    expect(ethnicityField.label).toBe('Race: Select the option that applies');
+
+    const hispanicField = fields.find(f => f.domId === 'personalInfoUS--hispanicOrLatino' || f.name === 'hispanicOrLatino');
+    expect(hispanicField).toBeDefined();
+    expect(hispanicField.label).toBe('Hispanic or Latino?');
+
+    const agreementField = fields.find(f => f.domId === 'termsAndConditions--acceptTermsAndAgreements' || f.name === 'acceptTermsAndAgreements');
+    expect(agreementField).toBeDefined();
+    expect(agreementField.type).toBe('checkbox');
+
+    const profile = {
+      personal: { first_name: 'Amol', last_name: 'Sonawane' },
+      voluntaryDisclosures: {
+        gender: 'Male',
+        ethnicity: 'Asian',
+        hispanicOrLatino: 'No'
+      }
+    };
+
+    const mapped = mapFieldsHeuristically(fields, profile);
+    const genderMap = mapped.find(m => m.id === genderField.id);
+    expect(genderMap.value).toBe('Male');
+
+    const ethnicityMap = mapped.find(m => m.id === ethnicityField.id);
+    expect(ethnicityMap.value).toBe('Asian');
+
+    const hispanicMap = mapped.find(m => m.id === hispanicField.id);
+    expect(hispanicMap.value).toBe('No');
+
+    const agreementMap = mapped.find(m => m.id === agreementField.id);
+    expect(agreementMap.value).toBe(true);
+  });
 });

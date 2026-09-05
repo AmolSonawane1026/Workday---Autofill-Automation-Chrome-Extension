@@ -65,18 +65,6 @@ export default function App() {
         </button>
 
         <button
-          onClick={() => setActiveTab('profile')}
-          className={`flex-1 py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition ${
-            activeTab === 'profile'
-              ? 'bg-white text-slate-900 shadow-sm border border-slate-200/80'
-              : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <User className="w-3.5 h-3.5" />
-          <span>Profile</span>
-        </button>
-
-        <button
           onClick={() => setActiveTab('autofill')}
           className={`flex-1 py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition ${
             activeTab === 'autofill'
@@ -86,6 +74,18 @@ export default function App() {
         >
           <Play className="w-3.5 h-3.5" />
           <span>Autofill</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('profile')}
+          className={`flex-1 py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition ${
+            activeTab === 'profile'
+              ? 'bg-white text-slate-900 shadow-sm border border-slate-200/80'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          <User className="w-3.5 h-3.5" />
+          <span>Profile</span>
         </button>
 
         <button

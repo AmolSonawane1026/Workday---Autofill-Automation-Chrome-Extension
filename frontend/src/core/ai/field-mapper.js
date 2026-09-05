@@ -178,6 +178,43 @@ export function extractDegreeAndInstitution(degreeRaw = '', institutionRaw = '')
 }
 
 /**
+ * Infers candidate gender from first/full name based on standard naming conventions
+ */
+export function inferGenderFromName(name = '') {
+  if (!name || typeof name !== 'string') return 'Male';
+  const first = name.trim().split(/\s+/)[0].toLowerCase();
+  if (!first) return 'Male';
+
+  const femaleNames = new Set([
+    'priya', 'ananya', 'pooja', 'sneha', 'neha', 'shreya', 'shweta', 'divya', 'kavya', 'deepa', 'aditi',
+    'sarah', 'emily', 'jessica', 'ashley', 'amanda', 'elizabeth', 'jennifer', 'megan', 'lauren', 'rachel',
+    'hannah', 'charlotte', 'olivia', 'emma', 'sophia', 'isabella', 'mia', 'amelia', 'harper', 'evelyn',
+    'mary', 'patricia', 'linda', 'barbara', 'susan', 'karen', 'nancy', 'lisa', 'betty', 'margaret',
+    'sandra', 'ashley', 'kimberly', 'donna', 'carol', 'michelle', 'laura', 'chloe', 'zoe', 'lily',
+    'aishwarya', 'deepika', 'anushka', 'radha', 'meera', 'shruti', 'swati', 'tanvi', 'bhavna', 'rekha'
+  ]);
+
+  const maleNames = new Set([
+    'amol', 'rahul', 'amit', 'rohit', 'sachin', 'vikram', 'suresh', 'ramesh', 'ajay', 'vijay', 'anand',
+    'prashant', 'sandeep', 'manoj', 'rajesh', 'deepak', 'sunil', 'anil', 'pankaj', 'alok', 'vivek',
+    'john', 'michael', 'david', 'james', 'robert', 'william', 'joseph', 'charles', 'thomas', 'daniel',
+    'matthew', 'anthony', 'donald', 'mark', 'paul', 'steven', 'andrew', 'kenneth', 'joshua', 'george',
+    'kevin', 'brian', 'edward', 'ronald', 'timothy', 'jason', 'jeffrey', 'ryan', 'jacob', 'gary',
+    'nicholas', 'eric', 'jonathan', 'stephen', 'larry', 'justin', 'scott', 'brandon', 'benjamin', 'samuel',
+    'mohammed', 'ahmed', 'ali', 'hassan', 'omar', 'youssef', 'tariq', 'arjun', 'karan', 'varun', 'sid', 'siddharth'
+  ]);
+
+  if (femaleNames.has(first)) return 'Female';
+  if (maleNames.has(first)) return 'Male';
+
+  if (first.endsWith('deep') || first.endsWith('raj') || first.endsWith('esh') || first.endsWith('an') || first.endsWith('ik') || first.endsWith('ur') || first.endsWith('av')) {
+    return 'Male';
+  }
+
+  return 'Male';
+}
+
+/**
  * Determines whether a field is a non-input utility or action element
  * (e.g. utilityMenuButton, delete button, file upload button)
  */
@@ -474,7 +511,7 @@ export function mapFieldsHeuristically(formFields, rawProfile, geoContext = {}) 
       reasoning = 'Address from resume & AI reasoning';
     }
     // 18. City
-    else if (text.includes('city') || autoId.includes('city') || autoId.includes('addresssection_city')) {
+    else if ((/\bcity\b/i.test(text) || autoId.includes('addresssection_city') || rawLabel === 'city') && !text.includes('ethnicity')) {
       value = city;
       confidence = value ? 0.98 : 0;
       reasoning = 'City from resume';
@@ -635,23 +672,36 @@ export function mapFieldsHeuristically(formFields, rawProfile, geoContext = {}) 
       confidence = 0.90;
       reasoning = 'Candidate availability';
     }
-    // 38. Voluntary EEO Self-Identification (Safe universal defaults)
+    // 38. Voluntary EEO Self-Identification
     else if (text.includes('gender') || autoId.includes('gender')) {
-      value = 'I choose not to self-identify';
-      confidence = 0.90;
-      reasoning = 'Voluntary gender disclosure (safe default)';
+      let gPref = rawProfile?.voluntaryDisclosures?.gender || rawProfile?.demographics?.gender || rawProfile?.gender || '';
+      if (!gPref || gPref === 'Prefer Not to Answer') {
+        const candidateName = firstName || fullName || '';
+        gPref = inferGenderFromName(candidateName);
+      }
+      value = gPref || 'Male';
+      confidence = 0.95;
+      reasoning = `Candidate gender (${value})`;
+    } else if (text.includes('hispanic') || autoId.includes('hispanic')) {
+      const hPref = rawProfile?.voluntaryDisclosures?.hispanicOrLatino || rawProfile?.hispanicOrLatino || '';
+      value = hPref || 'No';
+      confidence = 0.95;
+      reasoning = 'Hispanic or Latino status';
     } else if (text.includes('race') || text.includes('ethnicity') || autoId.includes('ethnicity')) {
-      value = 'I choose not to self-identify';
-      confidence = 0.90;
-      reasoning = 'Voluntary race/ethnicity disclosure (safe default)';
+      const ePref = rawProfile?.voluntaryDisclosures?.ethnicity || rawProfile?.ethnicity || rawProfile?.race || '';
+      value = ePref || 'Asian';
+      confidence = 0.95;
+      reasoning = 'Voluntary race/ethnicity disclosure';
     } else if (text.includes('veteran') || autoId.includes('veteran')) {
-      value = 'I am not a protected veteran';
-      confidence = 0.90;
-      reasoning = 'Veteran status (safe default)';
+      const vPref = rawProfile?.voluntaryDisclosures?.veteranStatus || rawProfile?.veteranStatus || '';
+      value = vPref || 'I am not a protected veteran';
+      confidence = 0.95;
+      reasoning = 'Veteran status';
     } else if (text.includes('disability') || autoId.includes('disability')) {
-      value = 'I do not wish to answer';
-      confidence = 0.90;
-      reasoning = 'Disability status (safe default)';
+      const dPref = rawProfile?.voluntaryDisclosures?.disability || rawProfile?.disability || '';
+      value = dPref || 'No';
+      confidence = 0.95;
+      reasoning = 'Disability status';
     }
 
     return {

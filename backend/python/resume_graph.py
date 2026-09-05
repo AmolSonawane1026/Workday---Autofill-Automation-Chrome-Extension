@@ -110,6 +110,9 @@ def parse_with_langchain_node(state: ResumeState, api_key: str = None) -> Dict[s
 Extract real LinkedIn, GitHub, and Portfolio URLs from text or embedded links.
 CRITICAL: Extract ALL work experience positions from the resume (every single employer and internship). Do not skip any role. For each position, extract the complete role description and highlights.
 Extract ALL education qualifications (degree, institution, fieldOfStudy, graduation year).
+INFER GENDER & DEMOGRAPHICS:
+- Analyze candidate's first name, full name, honorifics (Mr., Ms., Mrs.), and pronouns to infer gender ('Male' or 'Female'). If conventionally male (e.g. Amol, Rahul, John, Michael), set "Male". If female (e.g. Priya, Sarah, Emily), set "Female".
+- Provide voluntaryDisclosures defaults (ethnicity: "Asian", hispanicOrLatino: "No", veteranStatus: "I am not a protected veteran", disability: "No").
 Return strictly valid JSON:
 {
   "personalInfo": {
@@ -122,6 +125,13 @@ Return strictly valid JSON:
     "linkedIn": "string",
     "github": "string",
     "portfolio": "string"
+  },
+  "voluntaryDisclosures": {
+    "gender": "Male",
+    "ethnicity": "Asian",
+    "hispanicOrLatino": "No",
+    "veteranStatus": "I am not a protected veteran",
+    "disability": "No"
   },
   "summary": "string",
   "workExperience": [
