@@ -238,8 +238,8 @@ export function parseResumeHeuristically(text) {
       const isBullet = line.startsWith('•') || line.startsWith('-') || line.startsWith('▪') || line.startsWith('*') || /^\d+[\.\)]\s+/.test(line);
 
       // Check if this line contains dates
-      const dateMatch = line.match(/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4}\s*[-–—to]+\s*(?:Present|Current|Now|Ongoing|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4})/i) ||
-                        line.match(/\b(?:19\d{2}|20\d{2})\s*[-–—to]+\s*(?:Present|Current|Now|Ongoing|\b(?:19\d{2}|20\d{2})\b)/i);
+      const dateMatch = line.match(/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4}\s*(?:[-–—]|\bto\b)\s*(?:Present|Current|Now|Ongoing|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4})/i) ||
+                        line.match(/\b(?:19\d{2}|20\d{2})\s*(?:[-–—]|\bto\b)\s*(?:Present|Current|Now|Ongoing|\b(?:19\d{2}|20\d{2})\b)/i);
 
       if (dateMatch) {
         if (currentExp && (currentExp.company || currentExp.jobTitle)) {
@@ -290,7 +290,7 @@ export function parseResumeHeuristically(text) {
 
         let startD = '';
         let endD = '';
-        const dateParts = dateStr.split(/[-–—to]+/i).map(s => s.trim());
+        const dateParts = dateStr.split(/\s*[-–—]\s*|\s+\bto\b\s*/i).map(s => s.trim());
         if (dateParts.length > 0) startD = dateParts[0];
         if (dateParts.length > 1) endD = dateParts[1];
 
@@ -312,8 +312,17 @@ export function parseResumeHeuristically(text) {
           if (cleanBullet.length > 3) {
             currentExp.highlights.push(cleanBullet);
           }
-        } else if (line.length > 20 && !line.includes('@') && !line.includes('http') && !dateMatch) {
-          currentExp.highlights.push(line.trim());
+        } else {
+          // Check if this line is actually the header of the NEXT job experience
+          const isNextDateLine = i + 1 < expLines.length && (
+            /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4}/i.test(expLines[i + 1]) ||
+            /\b(?:19\d{2}|20\d{2})\s*(?:[-–—]|\bto\b)/i.test(expLines[i + 1])
+          );
+          const hasHeaderDelimiter = /\s+[-–—|]\s+|\s+at\s+/i.test(line);
+
+          if (!isNextDateLine && !hasHeaderDelimiter && line.length > 20 && !line.includes('@') && !line.includes('http')) {
+            currentExp.highlights.push(line.trim());
+          }
         }
       }
     }
@@ -348,60 +357,65 @@ export function parseResumeHeuristically(text) {
       const hasHyphen = /\s+[-–—|]\s+/.test(line);
 
       if (hasDegree || eduDateMatch || hasHyphen) {
-        if (!currentEdu) {
-          currentEdu = { institution: '', degree: '', fieldOfStudy: '', startDate: '', endDate: '', gpa: '' };
-        }
-
-        if (hasHyphen) {
-          const splitParts = line.split(/\s+[-–—|]\s+/);
-          if (splitParts.length >= 2) {
-            const part0 = splitParts[0].trim();
-            const part1 = splitParts.slice(1).join(' - ').trim();
-            const isPart0Uni = /\b(?:university|college|institute|school|academy)\b/i.test(part0);
-            if (isPart0Uni || !currentEdu.institution) {
-              currentEdu.institution = part0;
-              currentEdu.degree = part1;
-            } else {
-              currentEdu.degree = part0;
-              currentEdu.institution = part1;
-            }
-          }
-        } else if (hasDegree) {
-          currentEdu.degree = line.trim();
-        }
-
-        if (currentEdu.degree && !currentEdu.fieldOfStudy) {
-          const d = currentEdu.degree.toLowerCase();
-          if (d.includes('computer science')) currentEdu.fieldOfStudy = 'Computer Science';
-          else if (d.includes('computer application') || d.includes('bca') || d.includes('mca')) currentEdu.fieldOfStudy = 'Computer Applications';
-          else if (d.includes('software') || d.includes('information technology') || d.includes('it')) currentEdu.fieldOfStudy = 'Computer Science';
-          else if (d.includes('commerce') || d.includes('b.com')) currentEdu.fieldOfStudy = 'Commerce';
-          else if (d.includes('business') || d.includes('mba')) currentEdu.fieldOfStudy = 'Business Administration';
-          else if (d.includes(',')) {
-            const commaParts = currentEdu.degree.split(',');
-            if (commaParts[1]) currentEdu.fieldOfStudy = commaParts[1].trim();
-          }
-        }
-
         if (eduDateMatch) {
-          const parts = eduDateMatch[0].split(/[-–—to]+/i).map(s => s.trim());
+          const parts = eduDateMatch[0].split(/\s*[-–—]\s*|\s+\bto\b\s*/i).map(s => s.trim());
           const y1 = parts[0]?.match(/\b(19\d{2}|20\d{2})\b/);
           const y2 = parts[1]?.match(/\b(19\d{2}|20\d{2})\b/);
-          if (y1) currentEdu.startDate = y1[1];
-          if (y2) currentEdu.endDate = y2[1];
-        }
-      } else if (line.length > 3 && line.length < 120 && !line.startsWith('•') && !line.startsWith('-')) {
-        if (currentEdu && !currentEdu.institution) {
-          currentEdu.institution = line.trim();
-        } else if (!currentEdu) {
-          currentEdu = { institution: line.trim(), degree: '', fieldOfStudy: '', startDate: '', endDate: '', gpa: '' };
-        }
-      }
+          if (currentEdu) {
+            if (y1) currentEdu.startDate = y1[1];
+            if (y2) currentEdu.endDate = y2[1];
+          }
+        } else if (hasDegree || hasHyphen) {
+          if (currentEdu && (currentEdu.institution || currentEdu.degree) && (currentEdu.startDate || currentEdu.endDate)) {
+            educationList.push(currentEdu);
+            currentEdu = { institution: '', degree: '', fieldOfStudy: '', startDate: '', endDate: '', gpa: '' };
+          } else if (!currentEdu) {
+            currentEdu = { institution: '', degree: '', fieldOfStudy: '', startDate: '', endDate: '', gpa: '' };
+          }
 
-      // GPA detection
-      const gpaMatch = line.match(/(?:gpa|cgpa|grade|percentage)[:\s]*([0-9.]+)/i);
-      if (gpaMatch && currentEdu) {
-        currentEdu.gpa = gpaMatch[1];
+          if (hasHyphen) {
+            const splitParts = line.split(/\s+[-–—|]\s+/);
+            if (splitParts.length >= 2) {
+              const part0 = splitParts[0].trim();
+              const part1 = splitParts.slice(1).join(' - ').trim();
+              const isPart0Uni = /\b(?:university|college|institute|school|academy)\b/i.test(part0);
+              if (isPart0Uni || !currentEdu.institution) {
+                currentEdu.institution = part0;
+                currentEdu.degree = part1;
+              } else {
+                currentEdu.degree = part0;
+                currentEdu.institution = part1;
+              }
+            }
+          } else if (hasDegree) {
+            currentEdu.degree = line.trim();
+          }
+
+          if (currentEdu.degree && !currentEdu.fieldOfStudy) {
+            const d = currentEdu.degree.toLowerCase();
+            if (d.includes('computer science')) currentEdu.fieldOfStudy = 'Computer Science';
+            else if (d.includes('computer application') || d.includes('bca') || d.includes('mca')) currentEdu.fieldOfStudy = 'Computer Applications';
+            else if (d.includes('software') || d.includes('information technology') || d.includes('it')) currentEdu.fieldOfStudy = 'Computer Science';
+            else if (d.includes('commerce') || d.includes('b.com')) currentEdu.fieldOfStudy = 'Commerce';
+            else if (d.includes('business') || d.includes('mba')) currentEdu.fieldOfStudy = 'Business Administration';
+            else if (d.includes(',')) {
+              const commaParts = currentEdu.degree.split(',');
+              if (commaParts[1]) currentEdu.fieldOfStudy = commaParts[1].trim();
+            }
+          }
+        } else if (line.length > 3 && line.length < 120 && !line.startsWith('•') && !line.startsWith('-')) {
+          if (currentEdu && !currentEdu.institution) {
+            currentEdu.institution = line.trim();
+          } else if (!currentEdu) {
+            currentEdu = { institution: line.trim(), degree: '', fieldOfStudy: '', startDate: '', endDate: '', gpa: '' };
+          }
+        }
+
+        // GPA detection
+        const gpaMatch = line.match(/(?:gpa|cgpa|grade|percentage)[:\s]*([0-9.]+)/i);
+        if (gpaMatch && currentEdu) {
+          currentEdu.gpa = gpaMatch[1];
+        }
       }
     }
     if (currentEdu && (currentEdu.institution || currentEdu.degree)) {

@@ -212,10 +212,11 @@ def extract_deterministic_profile(raw_text: str, sections: Dict[str, str]) -> Di
             github = f"https://{gh_m.group(0).replace('https://', '').replace('http://', '')}"
 
     if not portfolio:
-        for domain in ["panobizz.com", "ssaihq.com"]:
-            if domain in raw_text.lower():
-                portfolio = f"https://{domain}"
-                break
+        portfolio_match = re.search(r'(?:https?:\/\/)?(?:www\.)?(?:[a-zA-Z0-9-]+\.(?:com|io|dev|in|me|app|co|net|org))\b', raw_text, re.IGNORECASE)
+        if portfolio_match:
+            found_p = portfolio_match.group(0)
+            if not any(ig in found_p.lower() for ig in ["linkedin", "github", "google", "googleapis", "cdnjs", "twitter", "facebook"]):
+                portfolio = found_p if found_p.startswith("http") else f"https://{found_p}"
 
     # Name
     full_name = ""
@@ -254,14 +255,14 @@ def extract_deterministic_profile(raw_text: str, sections: Dict[str, str]) -> Di
         for i, el in enumerate(exp_lines):
             if el.startswith("[Embedded") or el.startswith("Link:"):
                 continue
-            date_m = re.search(r'(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4}\s*[-–—to]+\s*(?:Present|Current|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4})', el, re.IGNORECASE)
+            date_m = re.search(r'(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4}\s*(?:[-–—]|\bto\b)\s*(?:Present|Current|Now|Ongoing|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4})', el, re.IGNORECASE)
             if date_m or re.match(r'^\d+\.\s+', el):
                 if current_exp:
                     current_exp["description"] = "\n".join(current_desc).strip()
                     experiences.append(current_exp)
                 d_str = date_m.group(0) if date_m else ""
                 comp = re.sub(r'^\d+\.\s*', '', el.replace(d_str, '')).split(",")[0].strip()
-                d_parts = re.split(r'[-–—to]+', d_str)
+                d_parts = re.split(r'\s*[-–—]\s*|\s+\bto\b\s*', d_str)
 
                 next_l = exp_lines[i+1] if i+1 < len(exp_lines) else ""
                 title = next_l if next_l and not next_l.startswith("•") and not next_l.startswith("-") and not re.match(r'^\d+\.', next_l) else ""
@@ -273,16 +274,16 @@ def extract_deterministic_profile(raw_text: str, sections: Dict[str, str]) -> Di
                     "location": f"{city}, {state}".strip(" ,"),
                     "startDate": d_parts[0].strip() if len(d_parts) > 0 else "",
                     "endDate": d_parts[1].strip() if len(d_parts) > 1 else "",
-                    "isCurrent": "present" in d_str.lower() or "current" in d_str.lower(),
+                    "isCurrent": any(k in d_str.lower() for k in ["present", "current", "now", "ongoing"]),
                     "description": "",
                     "highlights": []
                 }
             elif current_exp:
                 clean_l = el.strip()
-                if clean_l and not clean_l.startswith("1.") and not clean_l.startswith("2."):
+                if clean_l:
                     current_desc.append(clean_l)
-                    if clean_l.startswith("•") or clean_l.startswith("-"):
-                        current_exp["highlights"].append(re.sub(r'^[•-]\s*', '', clean_l))
+                    if clean_l.startswith("•") or clean_l.startswith("-") or clean_l.startswith("*"):
+                        current_exp["highlights"].append(re.sub(r'^[•\-*]\s*', '', clean_l))
         if current_exp:
             current_exp["description"] = "\n".join(current_desc).strip()
             experiences.append(current_exp)
@@ -296,14 +297,14 @@ def extract_deterministic_profile(raw_text: str, sections: Dict[str, str]) -> Di
             l_str = l.strip()
             if not l_str or l_str.startswith("[Embedded") or l_str.startswith("Link:"):
                 continue
-            date_m = re.search(r'\d{4}\s*[-–—to]+\s*(?:Present|\d{4})', l_str, re.IGNORECASE)
-            has_deg = any(k in l_str.lower() for k in ["bachelor", "master", "bca", "mca", "b.tech", "m.tech", "b.e", "degree", "diploma", "associate", "phd"])
+            date_m = re.search(r'\d{4}\s*(?:[-–—]|\bto\b)\s*(?:Present|\d{4})', l_str, re.IGNORECASE)
+            has_deg = any(k in l_str.lower() for k in ["bachelor", "master", "bca", "mca", "b.tech", "m.tech", "b.e", "degree", "diploma", "associate", "phd", "b.s", "m.s"])
             
             if has_deg or date_m:
                 if not current_edu:
                     current_edu = {"institution": "", "degree": "", "fieldOfStudy": "", "startDate": "", "endDate": "", "gpa": ""}
                 if has_deg:
-                    parts = re.split(r'\s{2,}', l_str)
+                    parts = re.split(r'\s{2,}|\s+[-–—|]\s+', l_str)
                     if len(parts) >= 2:
                         current_edu["degree"] = parts[0].strip()
                         if not current_edu["institution"]:
@@ -329,7 +330,7 @@ def extract_deterministic_profile(raw_text: str, sections: Dict[str, str]) -> Di
                         elif "business" in d_low or "mba" in d_low:
                             current_edu["fieldOfStudy"] = "Business Administration"
                 if date_m:
-                    d_parts = re.split(r'[-–—to]+', date_m.group(0))
+                    d_parts = re.split(r'\s*[-–—]\s*|\s+\bto\b\s*', date_m.group(0))
                     if len(d_parts) > 0: current_edu["startDate"] = d_parts[0].strip()
                     if len(d_parts) > 1: current_edu["endDate"] = d_parts[1].strip()
             elif 3 < len(l_str) < 120 and not l_str.startswith("•") and not l_str.startswith("-"):

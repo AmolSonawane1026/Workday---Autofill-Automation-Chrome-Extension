@@ -731,13 +731,42 @@ export function fillWorkdayDateInput(container, dateFieldAutoId, dateStr, direct
 export const fillSplitDateInputs = fillWorkdayDateInput;
 
 /**
- * Locates the Add button for Work Experience
- */
-/**
- * Locates the Add button specifically for Work Experience
+ * Locates the Add or Add Another button for Work Experience
  */
 export function findWorkExpAddButton(sectionIdx = 1) {
-  // 1. Direct match by exact Workday Work Experience section header id & group container
+  // 1. If looking to add a second or subsequent work experience (sectionIdx > 1):
+  if (sectionIdx > 1) {
+    const allButtons = Array.from(document.querySelectorAll('button, [role="button"]')).filter(b => {
+      const rect = b.getBoundingClientRect?.() || { width: 1, height: 1 };
+      return (rect.width > 0 && rect.height > 0) && !b.disabled;
+    });
+
+    const addAnother = allButtons.find(b => {
+      const text = (b.textContent || '').trim().toLowerCase();
+      const id = (b.getAttribute('data-automation-id') || '').toLowerCase();
+      const aria = (b.getAttribute('aria-label') || '').toLowerCase();
+      return (text.includes('another') || id.includes('another') || aria.includes('another')) &&
+             !text.includes('delete') && !id.includes('delete');
+    });
+    if (addAnother) return addAnother;
+
+    const expSection = document.querySelector(
+      'div[data-automation-id="workExperienceSection"], ' +
+      'div[role="group"][aria-labelledby*="Work-Experience" i], ' +
+      'div[role="group"][aria-labelledby*="experience" i]'
+    );
+    if (expSection) {
+      const sectionButtons = Array.from(expSection.querySelectorAll('button, [role="button"]')).filter(b => !b.disabled);
+      const lastAdd = sectionButtons.reverse().find(b => {
+        const t = (b.textContent || '').trim().toLowerCase();
+        const id = (b.getAttribute('data-automation-id') || '').toLowerCase();
+        return (t.includes('add') || id.includes('add')) && !t.includes('delete') && !id.includes('delete');
+      });
+      if (lastAdd) return lastAdd;
+    }
+  }
+
+  // 2. If adding the first work experience (sectionIdx === 1):
   const workExpHeading = document.getElementById('Work-Experience-section') ||
     document.querySelector('[id="Work-Experience-section"], [id*="Work-Experience" i], [aria-labelledby*="Work-Experience" i]');
 
@@ -761,74 +790,27 @@ export function findWorkExpAddButton(sectionIdx = 1) {
     }
   }
 
-  // 2. Direct match by role="group" with Work-Experience in aria-labelledby
-  const expGroup = document.querySelector(
-    'div[role="group"][aria-labelledby="Work-Experience-section"], ' +
-    'div[role="group"][aria-labelledby*="Work-Experience"], ' +
-    'div[role="group"][aria-labelledby*="work-experience" i], ' +
-    'div[role="group"][aria-labelledby*="experience" i], ' +
-    'div[data-automation-id="workExperienceSection"]'
-  );
-  if (expGroup) {
-    const btn = expGroup.querySelector(
-      'button[data-automation-id="add-button"], ' +
-      'button[data-automation-id="Add"], ' +
-      'button[data-automation-id*="add" i], ' +
-      'button'
-    );
-    if (btn) {
-      const text = (btn.textContent || '').trim().toLowerCase();
-      const id = (btn.getAttribute('data-automation-id') || '').toLowerCase();
-      if (!id.includes('delete') && !text.includes('delete') && (id.includes('add') || text.includes('add') || text === 'add')) {
-        return btn;
-      }
-    }
-  }
-
-  // 3. Fallback: Check general section or document
-  let section = document.querySelector(
+  // 3. Fallback: Search all buttons in workExperienceSection
+  const expSection = document.querySelector(
     'div[data-automation-id="workExperienceSection"], ' +
     'div[data-automation-id*="workExperience" i], ' +
-    'div[data-automation-id*="work-experience" i], ' +
-    'section[data-automation-id*="workExperience" i]'
-  );
+    'div[role="group"][aria-labelledby*="Work-Experience" i], ' +
+    'div[role="group"][aria-labelledby*="experience" i]'
+  ) || document;
 
-  const searchScope = section || expGroup || document;
-  const buttons = Array.from(searchScope.querySelectorAll('button, [role="button"]')).filter(b => {
-    return !b.disabled;
-  });
-
-  if (sectionIdx === 1) {
-    const exactAdd = buttons.find(b => {
-      const id = (b.getAttribute('data-automation-id') || '').toLowerCase();
-      const text = b.textContent.trim().toLowerCase();
-      const aria = (b.getAttribute('aria-label') || '').toLowerCase();
-      return (id === 'add-button' || id === 'add' || text === 'add' || aria === 'add' || text.startsWith('add ') || aria.includes('add work experience')) &&
-             !id.includes('delete') && !text.includes('another') && !id.includes('another');
-    });
-    if (exactAdd) return exactAdd;
-  } else {
-    const addAnother = buttons.find(b => {
-      const id = (b.getAttribute('data-automation-id') || '').toLowerCase();
-      const text = b.textContent.trim().toLowerCase();
-      const aria = (b.getAttribute('aria-label') || '').toLowerCase();
-      return text.includes('another') || id.includes('another') || aria.includes('another') || text === 'add' || id === 'add' || id === 'add-button';
-    });
-    if (addAnother) return addAnother;
-  }
-
+  const buttons = Array.from(expSection.querySelectorAll('button, [role="button"]')).filter(b => !b.disabled);
   const found = buttons.find(b => {
     const id = (b.getAttribute('data-automation-id') || '').toLowerCase();
     const label = (b.getAttribute('aria-label') || '').toLowerCase();
     const text = b.textContent.trim().toLowerCase();
     return (id.includes('add') || label.includes('add') || text.includes('add')) &&
-           !id.includes('delete') && !text.includes('delete') && !label.includes('delete');
+           !id.includes('delete') && !text.includes('delete');
   });
 
   return found || document.querySelector(
     'button[data-automation-id="add-button"], ' +
     'div[data-automation-id="workExperienceSection"] button, ' +
-    'button[data-automation-id="Add"], button[data-automation-id="add"], button[data-automation-id*="add" i], [role="button"][data-automation-id*="add" i]'
+    'button[data-automation-id="Add"], button[data-automation-id="add"], button[data-automation-id*="add" i]'
   );
 }
 
@@ -1072,7 +1054,7 @@ export async function fillWorkExperienceAndEducation(profile = {}) {
         const titleInputs = Array.from(indexedContainer.querySelectorAll(
           'input[data-automation-id="jobTitle"], input[aria-label*="Job Title" i], div[data-automation-id*="jobTitle" i] input'
         ));
-        const titleInput = titleInputs[i] || titleInputs[titleInputs.length - 1] || titleInputs[0];
+        const titleInput = titleInputs.length === 1 ? titleInputs[0] : (titleInputs[i] || titleInputs[titleInputs.length - 1] || titleInputs[0]);
         if (titleInput && jobTitle) {
           titleInput.focus();
           setNativeInputValue(titleInput, jobTitle);
@@ -1083,9 +1065,9 @@ export async function fillWorkExperienceAndEducation(profile = {}) {
 
         // 2. Company / Employer
         const companyInputs = Array.from(indexedContainer.querySelectorAll(
-          'input[data-automation-id="company"], input[aria-label*="Company" i], div[data-automation-id*="company" i] input'
+          'input[data-automation-id="company"], input[data-automation-id*="company" i], input[data-automation-id*="employer" i], input[aria-label*="Company" i], input[aria-label*="Employer" i], div[data-automation-id*="company" i] input'
         ));
-        const companyInput = companyInputs[i] || companyInputs[companyInputs.length - 1] || companyInputs[0];
+        const companyInput = companyInputs.length === 1 ? companyInputs[0] : (companyInputs[i] || companyInputs[companyInputs.length - 1] || companyInputs[0]);
         if (companyInput && company) {
           companyInput.focus();
           setNativeInputValue(companyInput, company);
@@ -1098,7 +1080,7 @@ export async function fillWorkExperienceAndEducation(profile = {}) {
         const locationInputs = Array.from(indexedContainer.querySelectorAll(
           'input[data-automation-id="location"], input[aria-label*="Location" i], div[data-automation-id*="location" i] input'
         ));
-        const locationInput = locationInputs[i] || locationInputs[locationInputs.length - 1] || locationInputs[0];
+        const locationInput = locationInputs.length === 1 ? locationInputs[0] : (locationInputs[i] || locationInputs[locationInputs.length - 1] || locationInputs[0]);
         const resolvedLocation = location || profile?.personal?.location || profile?.personalInfo?.location || profile?.personalInfo?.city || '';
         if (locationInput && resolvedLocation) {
           locationInput.focus();
@@ -1139,7 +1121,7 @@ export async function fillWorkExperienceAndEducation(profile = {}) {
         const descAreas = Array.from(indexedContainer.querySelectorAll(
           'textarea[data-automation-id="description"], textarea[data-automation-id*="description" i], textarea'
         ));
-        const descArea = descAreas[i] || descAreas[descAreas.length - 1] || descAreas[0];
+        const descArea = descAreas.length === 1 ? descAreas[0] : (descAreas[i] || descAreas[descAreas.length - 1] || descAreas[0]);
         let descText = exp.description || '';
         if (exp.highlights && exp.highlights.length) {
           const highlightsText = exp.highlights.map(h => (h.startsWith('•') || h.startsWith('-')) ? h : `• ${h}`).join('\n');
